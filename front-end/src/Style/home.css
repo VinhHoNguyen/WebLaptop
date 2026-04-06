@@ -67,7 +67,11 @@ img {
     display: flex;
     flex-direction: column;
     height: 100%;
-    min-height: 400px;
+    min-height: 380px;
+  }
+
+  .most-popular .row > [class*="col-"] {
+    display: flex;
   }
   
   .most-popular .item img {
@@ -92,26 +96,26 @@ img {
     font-weight: 400;
   }
   
-  .most-popular .item ul {
-    margin-top: auto;
-    margin-bottom: 0px;
-    display: flex;
-    justify-content: space-between;
-    list-style: none;
-    padding: 0;
+  .game-card-title {
+    min-height: 48px;
+    line-height: 24px;
+    overflow: hidden;
   }
-  
-  .most-popular .item ul li {
+
+  .game-card-category {
+    margin: 0;
     color: #fff;
-    font-size: 14px;
+    min-height: 30px;
+    line-height: 30px;
   }
-  
-  .most-popular .item ul li:first-child i {
-    color: yellow;
-  }
-  
-  .most-popular .item ul li:last-child i {
+
+  .game-card-price {
+    margin-top: auto;
     color: #ec6090;
+    font-size: 22px;
+    font-weight: 700;
+    text-align: right;
+    line-height: 1;
   }
   
   .most-popular .main-button {
