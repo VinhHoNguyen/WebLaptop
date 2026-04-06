@@ -2,6 +2,7 @@ import { Fragment, useEffect, useState } from "react";
 
 import "../Style/Cart.css";
 import NavBar from "../component/NavBar";
+import { API_BASE_URLS } from "../config/api";
 function Cart() {
 
   const [cartData, setCartData] = useState({ total: 0, Products: [] });
@@ -18,7 +19,7 @@ function Cart() {
           return;
         }
 
-        const response = await fetch("http://localhost:3003/cart", {
+        const response = await fetch(`${API_BASE_URLS.cart}/cart`, {
           headers: {
             "Content-Type": "application/json",
             "Authorization": "Bearer " + token,

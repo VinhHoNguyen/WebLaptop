@@ -49,7 +49,7 @@ http://<container_ip_address>:<port_no>/
 ```
 8. To run the frontend application, run the following command:
 ```bash
-cd frontend
+cd front-end
 npm install
 npm run dev
 ```
@@ -57,6 +57,22 @@ npm run dev
 ```bash
 http://localhost:5173/
 ```
+## CI/CD
+
+This repository now includes a GitHub Actions pipeline in [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml).
+
+- On pull requests and pushes, it validates all backend services with `npm ci` and syntax checks, then builds the front-end with Vite.
+- On pushes to `main`, it builds and publishes Docker images for `user`, `product`, `cart`, and `front-end` to GitHub Container Registry.
+- The production compose file is [`docker-compose.prod.yml`](docker-compose.prod.yml). Set `GHCR_OWNER`, MongoDB credentials, and `ACCESS_TOKEN` before running it on a server.
+
+The front-end build reads these optional Vite variables:
+
+- `VITE_USER_API_URL`
+- `VITE_PRODUCT_API_URL`
+- `VITE_CART_API_URL`
+
+If they are not set, the build falls back to the local development ports.
+
 ## Products json file
 - [Products json file](https://github.com/Andrewaziz99/E-Commerce_Web_Application/blob/main/products.json)
 

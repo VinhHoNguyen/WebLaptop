@@ -1,5 +1,6 @@
 import "../Style/Register.css";
 import { useState } from "react";
+import { API_BASE_URLS } from "../config/api";
 function Register() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -14,7 +15,7 @@ function Register() {
     event.preventDefault();
 
     try {
-      const response = await fetch("http://localhost:3001/users", {
+      const response = await fetch(`${API_BASE_URLS.user}/users`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -52,7 +53,7 @@ function Register() {
     <div className="bg-img">
       <div className="registerContent">
         <header>Register Form</header>
-        <form action="http://localhost:3001/users" method="post" onSubmit={handleSubmit}>
+        <form action={`${API_BASE_URLS.user}/users`} method="post" onSubmit={handleSubmit}>
           <div className="row">
             <div className="col">
               <h6>First name</h6>

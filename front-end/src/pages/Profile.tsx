@@ -9,15 +9,26 @@ import clip4 from "../assets/clip-04.jpg";
 import profile from "../assets/profile.jpg";
 import profileg from "../assets/profileGirl.jpg";
 import { useState, useEffect, Fragment } from "react";
+import { API_BASE_URLS } from "../config/api";
+
+type UserProfile = {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  age?: number | string;
+  phone?: string;
+  gender?: string;
+};
+
 function Profile() {
 
 
-  const [user, setUser] = useState({});
+  const [user, setUser] = useState<UserProfile>({});
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
-      fetch("http://localhost:3001/users/", {
+      fetch(`${API_BASE_URLS.user}/users/`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",

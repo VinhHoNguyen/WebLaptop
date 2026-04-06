@@ -1,6 +1,7 @@
 import { Fragment, useState } from "react";
 import "../Style/Login.css";
 import Alert from "../component/Alert";
+import { API_BASE_URLS } from "../config/api";
 function Login() {
 
 
@@ -10,7 +11,7 @@ function Login() {
     event.preventDefault();
     
     try {
-      const response = await fetch("http://localhost:3001/users/login", {
+      const response = await fetch(`${API_BASE_URLS.user}/users/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

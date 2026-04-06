@@ -1,10 +1,10 @@
-FROM node
+FROM node:20-alpine
 
 WORKDIR /app
 
 COPY . /app
 
-EXPOSE 3003:3003
+EXPOSE 3003
 
 RUN npm install
 
