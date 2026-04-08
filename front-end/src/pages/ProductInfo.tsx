@@ -2,6 +2,7 @@ import "../Style/profile.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Fragment, useState, useEffect } from "react";
 import { API_BASE_URLS } from "../config/api";
+import { formatVnd } from "../utils/currency";
 
 type ProductDetails = {
   image?: string;
@@ -93,7 +94,7 @@ function ProductInfo() {
                             Game Category <span>{inputValue.category}</span>
                           </li>
                           <li>
-                            Price <span>{inputValue.price}</span>
+                            Price <span>{formatVnd(inputValue.price)}</span>
                           </li>
                         </ul>
                       </div>

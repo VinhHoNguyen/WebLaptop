@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 const redis = require('redis');
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
+require('dotenv').config({ path: path.resolve(__dirname, '../.env'), override: true });
 
 const redisClient = redis.createClient();
 
@@ -12,9 +14,13 @@ const mongo_username = process.env.MONGO_USERNAME;
 const mongo_password = process.env.MONGO_PASSWORD;
 const mongo_cluster = process.env.MONGO_CLUSTER;
 const mongo_database = process.env.MONGO_DBNAME;
+const mongo_uri = process.env.MONGO_URI;
 
+const connectionUri =
+	mongo_uri ||
+	`mongodb+srv://${mongo_username}:${mongo_password}@${mongo_cluster}/${mongo_database}?retryWrites=true&w=majority`;
 
-mongoose.connect(`mongodb+srv://${mongo_username}:${mongo_password}@${mongo_cluster}/${mongo_database}?retryWrites=true&w=majority`
+mongoose.connect(connectionUri
 , { useNewUrlParser: true, useUnifiedTopology: true })
 .then(() => console.log(`Connected to: ${mongoose.connection.name}`))
 .catch(err => console.log(err));

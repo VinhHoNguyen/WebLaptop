@@ -1,4 +1,5 @@
 import "../Style/home.css";
+import { formatVnd } from "../utils/currency";
 
 interface Props {
   name: string;
@@ -20,7 +21,7 @@ const Card = ({ name, price, imgsrc, category }: Props) => {
       <img src={imgsrc} alt={name} onError={handleImageError} />
       <h4 className="game-card-title">{name}</h4>
       <p className="game-card-category">{category}</p>
-      <div className="game-card-price">${price}</div>
+      <div className="game-card-price">{formatVnd(price)}</div>
     </div>
   );
 };

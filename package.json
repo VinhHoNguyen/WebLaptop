@@ -1,0 +1,11 @@
+{
+  "name": "webgame-local-stack",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev:all": "concurrently -n user,product,cart,frontend -c green,blue,magenta,yellow \"npm --prefix User run dev\" \"npm --prefix Product run dev\" \"npm --prefix Cart run dev\" \"npm --prefix front-end run dev\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

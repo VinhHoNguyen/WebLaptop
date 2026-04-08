@@ -3,6 +3,7 @@ import { Fragment, useEffect, useState } from "react";
 import "../Style/Cart.css";
 import NavBar from "../component/NavBar";
 import { API_BASE_URLS } from "../config/api";
+import { formatVnd } from "../utils/currency";
 function Cart() {
 
   const [cartData, setCartData] = useState({ total: 0, Products: [] });
@@ -48,18 +49,6 @@ function Cart() {
     fetchCartData();
   }, []);
 
-  useEffect(() => {
-    // Update total price when cartData changes
-    if (cartData) {
-      const totalPriceElement = document.getElementById("totalPrice");
-      if (totalPriceElement) {
-        totalPriceElement.innerHTML = "Total: $" + cartData.total;
-      }
-    }
-  }, [cartData]);
-
-
-
   return (
     <Fragment>
       <div className="backgrounds">
@@ -94,7 +83,7 @@ function Cart() {
                       </td>
                       <td className="bold-text">{product.name}</td>
                       <td>{product.category}</td>
-                      <td>${product.price}</td>
+                      <td>{formatVnd(product.price)}</td>
                     </tr>
                   ))}
 
@@ -102,8 +91,7 @@ function Cart() {
                 </table>
               </div>
               <div className="cart-table-bill">
-                {/* <div className="bill-sub">Subtotal: $104.97</div> */}
-                <div className="bill-total bold-text">${cartData.total}</div>
+                <div className="bill-total bold-text">{formatVnd(cartData.total)}</div>
               </div>
               <div className="cart-header-footer">
                 <a href="/Checkout">

@@ -3,6 +3,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import React from "react";
 import image from "../assets/profile.jpg";
 import data from "../data.json";
+import { formatVnd } from "../utils/currency";
 interface Props {
   price: number;
   name: string;
@@ -25,7 +26,7 @@ const Item = ({ price, name, imgsrc }: Props) => {
                 </div>
               </div>
               <div className="col-lg-4">
-                <h4>{price} $</h4>
+                <h4>{formatVnd(price)}</h4>
               </div>
             </div>
           </div>
