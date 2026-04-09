@@ -16,6 +16,14 @@ const productSchema =  new mongoose.Schema({
     },
     image: {
         "type": "String"
+    },
+    specs: {
+        brand: { "type": "String" },
+        cpu: { "type": "String" },
+        gpu: { "type": "String" },
+        ramGb: { "type": "Number" },
+        storageGb: { "type": "Number" },
+        display: { "type": "String" }
     }
 })
 
