@@ -7,6 +7,7 @@ import { Fragment } from "react";
 import Home from "./pages/Home";
 import Cart from "./pages/Cart";
 import CheckOut from "./pages/CheckOut";
+import Admin from "./pages/Admin";
 import NavBar from "./component/NavBar";
 function App() {
   return (
@@ -19,6 +20,8 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/productInfo/:productId" element={<ProductInfo />} />
+          <Route path="/productinfo/:productId" element={<ProductInfo />} />
+          <Route path="/admin" element={<Admin />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<CheckOut />} />
         </Routes>

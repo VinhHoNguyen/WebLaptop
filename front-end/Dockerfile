@@ -2,10 +2,12 @@ FROM node:latest
 
 WORKDIR /app
 
-COPY . app/
+COPY package*.json ./
 
-RUN npm install
+RUN npm ci
 
-EXPOSE 3000
+COPY . .
+
+EXPOSE 5173
 
 CMD npm run dev

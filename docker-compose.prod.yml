@@ -3,6 +3,7 @@ version: "3.8"
 services:
   user:
     image: ghcr.io/${GHCR_OWNER}/webgame-user:${IMAGE_TAG:-latest}
+    restart: unless-stopped
     ports:
       - "${USER_PORT:-3001}:3001"
     environment:
@@ -15,6 +16,7 @@ services:
 
   product:
     image: ghcr.io/${GHCR_OWNER}/webgame-product:${IMAGE_TAG:-latest}
+    restart: unless-stopped
     ports:
       - "${PRODUCT_PORT:-3002}:3002"
     environment:
@@ -27,6 +29,7 @@ services:
 
   cart:
     image: ghcr.io/${GHCR_OWNER}/webgame-cart:${IMAGE_TAG:-latest}
+    restart: unless-stopped
     ports:
       - "${CART_PORT:-3003}:3003"
     environment:
@@ -39,5 +42,12 @@ services:
 
   front-end:
     image: ghcr.io/${GHCR_OWNER}/webgame-frontend:${IMAGE_TAG:-latest}
+    restart: unless-stopped
     ports:
-      - "${FRONTEND_PORT:-80}:80"
+      - "${FRONTEND_PORT:-5173}:80"
+
+  admin-portal:
+    image: ghcr.io/${GHCR_OWNER}/webgame-admin-portal:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "${ADMIN_PORT:-5174}:80"
