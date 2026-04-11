@@ -1,42 +1,86 @@
-version: '3'
+version: "3.8"
+
 services:
   user:
-    image: user
+    build:
+      context: ./User
+      dockerfile: Dockerfile
+    container_name: webgame-user
+    restart: unless-stopped
     ports:
-      - "3001:3001"
+      - "${USER_PORT:-3001}:3001"
     env_file:
       - .env
     environment:
       PORT: 3001
-    command: node server.js
-
-  cart:
-    image: cart
-    ports:
-      - "3003:3003"
-    env_file:
-      - .env
-    environment:
-      PORT: 3003
-    command: node server.js  
 
   product:
-    image: product
+    build:
+      context: ./Product
+      dockerfile: Dockerfile
+    container_name: webgame-product
+    restart: unless-stopped
     ports:
-      - "3002:3002"
+      - "${PRODUCT_PORT:-3002}:3002"
     env_file:
       - .env
     environment:
       PORT: 3002
-    command: node server.js
+
+  cart:
+    build:
+      context: ./Cart
+      dockerfile: Dockerfile
+    container_name: webgame-cart
+    restart: unless-stopped
+    ports:
+      - "${CART_PORT:-3003}:3003"
+    env_file:
+      - .env
+    environment:
+      PORT: 3003
 
   payment:
-    image: payment
+    build:
+      context: ./Payment
+      dockerfile: Dockerfile
+    container_name: webgame-payment
+    restart: unless-stopped
     ports:
-      - "3004:3004"
+      - "${PAYMENT_PORT:-3004}:3004"
     env_file:
       - .env
     environment:
       PORT: 3004
-    command: node server.js
-    
+
+  front-end:
+    build:
+      context: ./front-end
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_USER_API_URL: ${VITE_USER_API_URL:-http://localhost:3001}
+        VITE_PRODUCT_API_URL: ${VITE_PRODUCT_API_URL:-http://localhost:3002}
+        VITE_CART_API_URL: ${VITE_CART_API_URL:-http://localhost:3003}
+    container_name: webgame-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-5173}:80"
+    depends_on:
+      - user
+      - product
+      - cart
+
+  admin-portal:
+    build:
+      context: ./admin-portal
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_USER_API_URL: ${VITE_USER_API_URL:-http://localhost:3001}
+        VITE_PRODUCT_API_URL: ${VITE_PRODUCT_API_URL:-http://localhost:3002}
+    container_name: webgame-admin-portal
+    restart: unless-stopped
+    ports:
+      - "${ADMIN_PORT:-5174}:80"
+    depends_on:
+      - user
+

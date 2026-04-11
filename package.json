@@ -3,7 +3,12 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "dev:all": "concurrently -n user,product,cart,payment,frontend -c green,blue,magenta,cyan,yellow \"npm --prefix User run dev\" \"npm --prefix Product run dev\" \"npm --prefix Cart run dev\" \"npm --prefix Payment run dev\" \"npm --prefix front-end run dev\""
+    "dev:all": "concurrently -n user,product,cart,payment,frontend -c green,blue,magenta,cyan,yellow \"npm --prefix User run dev\" \"npm --prefix Product run dev\" \"npm --prefix Cart run dev\" \"npm --prefix Payment run dev\" \"npm --prefix front-end run dev\"",
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "docker:prod:up": "docker compose -f docker-compose.prod.yml up -d",
+    "docker:prod:down": "docker compose -f docker-compose.prod.yml down"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

@@ -52,10 +52,43 @@ const createProduct = async (req, res) => {
     }
 };
 
+const updateProduct = async (req, res) => {
+    try {
+        const updated = await productModel.findByIdAndUpdate(req.params.id, req.body, {
+            new: true,
+            runValidators: true,
+        });
+
+        if (!updated) {
+            return res.status(404).json({ message: "Product not found" });
+        }
+
+        res.status(200).json(updated);
+    } catch (error) {
+        res.status(400).json(error);
+    }
+};
+
+const deleteProduct = async (req, res) => {
+    try {
+        const deleted = await productModel.findByIdAndDelete(req.params.id);
+
+        if (!deleted) {
+            return res.status(404).json({ message: "Product not found" });
+        }
+
+        res.status(200).json({ message: "Deleted", id: req.params.id });
+    } catch (error) {
+        res.status(400).json(error);
+    }
+};
+
 module.exports = {
     getProducts,
     getProductByName,
     createProduct,
     getProductById,
-    findProduct
+    findProduct,
+    updateProduct,
+    deleteProduct
 };

@@ -1,297 +1,1176 @@
-import { useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { API_BASE_URLS, fetchJson } from "./config/api";
 
-type AdminPage = "dashboard" | "products";
+type Role = "Admin" | "Moderator" | "User";
+type UserStatus = "Active" | "Inactive";
+type AdminTab = "users" | "products";
 
-type ProductStatus = "Active" | "Low Stock" | "Inactive";
+type ApiUser = {
+  _id: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  age?: number;
+  phone?: string;
+  gender?: string;
+  role?: string;
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+type ApiProduct = {
+  _id: string;
+  name?: string;
+  description?: string;
+  category?: string;
+  image?: string;
+  price?: number;
+};
+
+type UserRow = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  email: string;
+  age: number | null;
+  phone: string;
+  gender: string;
+  role: Role;
+  status: UserStatus;
+  joined: string;
+  updatedAt: string;
+  initials: string;
+};
 
 type ProductRow = {
   id: string;
-  image: string;
   name: string;
+  description: string;
   category: string;
-  stock: number;
-  status: ProductStatus;
   price: number;
+  image: string;
 };
 
-type OrderRow = {
-  id: string;
-  customer: string;
-  status: "Completed" | "Pending" | "Shipped" | "Cancelled" | "Processing";
-  amount: number;
+type EditFormState = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  age: string;
+  phone: string;
+  gender: string;
+  role: Role;
+  status: UserStatus;
 };
 
-const kpiCards = [
-  { title: "Total Users", value: "12,450", delta: "5.2% This Month", tone: "blue" },
-  { title: "New Orders", value: "1,234", delta: "3.8% This Week", tone: "green" },
-  { title: "Earnings", value: "$8,750", delta: "12.5% This Month", tone: "orange" },
-  { title: "Support Tickets", value: "68", delta: "Pending", tone: "red" },
-] as const;
+type CreateFormState = EditFormState & {
+  password: string;
+};
 
-const products: ProductRow[] = [
-  { id: "p1", image: "SM", name: "Smartphone", category: "Electronics", stock: 320, status: "Active", price: 699 },
-  { id: "p2", image: "LP", name: "Laptop", category: "Electronics", stock: 120, status: "Active", price: 1099 },
-  { id: "p3", image: "WH", name: "Wireless Headphones", category: "Accessories", stock: 215, status: "Active", price: 199 },
-  { id: "p4", image: "SW", name: "Smart Watch", category: "Wearable", stock: 50, status: "Low Stock", price: 299 },
-  { id: "p5", image: "CM", name: "Coffee Maker", category: "Home Appliance", stock: 87, status: "Inactive", price: 49.99 },
-];
+const PAGE_SIZE = 8;
+const PRODUCT_PAGE_SIZE = 8;
+const roleFilters: Array<Role | "All Roles"> = ["All Roles", "Admin", "Moderator", "User"];
+const statusFilters: Array<UserStatus | "All Statuses"> = ["All Statuses", "Active", "Inactive"];
 
-const orders: OrderRow[] = [
-  { id: "#10245", customer: "John Doe", status: "Completed", amount: 150 },
-  { id: "#10244", customer: "Anna Smith", status: "Pending", amount: 89 },
-  { id: "#10243", customer: "Michael Brown", status: "Shipped", amount: 210 },
-  { id: "#10242", customer: "Linda Nguyen", status: "Cancelled", amount: 45 },
-  { id: "#10241", customer: "David Wilson", status: "Processing", amount: 120 },
-];
+const normalizeRole = (role?: string): Role => {
+  if (role === "Admin" || role === "Moderator" || role === "User") {
+    return role;
+  }
+  return "User";
+};
 
-const topProducts = [
-  ["Smartphone", "1,230 Sales"],
-  ["Laptop", "980 Sales"],
-  ["Headphones", "835 Sales"],
-  ["Smart Watch", "652 Sales"],
-] as const;
+const normalizeStatus = (status?: string): UserStatus => {
+  if (status === "Active" || status === "Inactive") {
+    return status;
+  }
+  return "Active";
+};
 
-const activities = [
-  ["David added a new product", "10 mins ago"],
-  ["Anna updated an order", "30 mins ago"],
-  ["John replied to a support ticket", "1 hour ago"],
-  ["Michael registered a new user", "2 hours ago"],
-] as const;
+const toInitials = (firstName: string, lastName: string, email: string) => {
+  const f = firstName.trim();
+  const l = lastName.trim();
+  if (f || l) {
+    return `${f.slice(0, 1)}${l.slice(0, 1)}`.toUpperCase() || "US";
+  }
+  return email.slice(0, 2).toUpperCase() || "US";
+};
 
-const messages = [
-  ["Alice", "Need help with my order."],
-  ["Steve", "How to reset my password?"],
-  ["Karen", "Please check the inventory."],
-] as const;
+const formatDate = (value?: string) => {
+  if (!value) {
+    return "-";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  const yyyy = date.getFullYear();
+  return `${mm}/${dd}/${yyyy}`;
+};
+
+const mapApiUser = (user: ApiUser): UserRow => {
+  const firstName = user.firstName?.trim() || "";
+  const lastName = user.lastName?.trim() || "";
+  const fullName = `${firstName} ${lastName}`.trim() || "Unknown User";
+  const email = user.email || "no-email";
+
+  return {
+    id: user._id,
+    firstName,
+    lastName,
+    fullName,
+    email,
+    age: typeof user.age === "number" ? user.age : null,
+    phone: user.phone || "",
+    gender: user.gender || "",
+    role: normalizeRole(user.role),
+    status: normalizeStatus(user.status),
+    joined: formatDate(user.createdAt),
+    updatedAt: formatDate(user.updatedAt),
+    initials: toInitials(firstName, lastName, email),
+  };
+};
+
+const toEditState = (user: UserRow): EditFormState => ({
+  firstName: user.firstName,
+  lastName: user.lastName,
+  email: user.email,
+  age: user.age === null ? "" : String(user.age),
+  phone: user.phone,
+  gender: user.gender,
+  role: user.role,
+  status: user.status,
+});
+
+const mapApiProduct = (product: ApiProduct): ProductRow => ({
+  id: product._id,
+  name: product.name?.trim() || "Untitled Product",
+  description: product.description?.trim() || "",
+  category: product.category?.trim() || "Uncategorized",
+  price: typeof product.price === "number" ? product.price : 0,
+  image: product.image?.trim() || "",
+});
+
+const formatVnd = (value: number) => {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0,
+  }).format(value);
+};
+
+const createFormInitialState = (): CreateFormState => ({
+  firstName: "",
+  lastName: "",
+  email: "",
+  age: "",
+  phone: "",
+  gender: "",
+  role: "User",
+  status: "Active",
+  password: "",
+});
 
 function App() {
-  const [page, setPage] = useState<AdminPage>("dashboard");
+  const [adminName, setAdminName] = useState("Admin");
+  const [token, setToken] = useState(() => localStorage.getItem("admin_user_token") || "");
+  const [currentPath, setCurrentPath] = useState(() => window.location.pathname || "/");
 
-  const pageTitle = useMemo(() => {
-    return page === "dashboard" ? "Welcome back, Admin!" : "Products";
-  }, [page]);
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [products, setProducts] = useState<ProductRow[]>([]);
+  const [activeTab, setActiveTab] = useState<AdminTab>("users");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [productLoading, setProductLoading] = useState(false);
+  const [productError, setProductError] = useState<string | null>(null);
+
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [loggingIn, setLoggingIn] = useState(false);
+
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState<Role | "All Roles">("All Roles");
+  const [statusFilter, setStatusFilter] = useState<UserStatus | "All Statuses">("All Statuses");
+  const [page, setPage] = useState(1);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [productSearch, setProductSearch] = useState("");
+  const [productPage, setProductPage] = useState(1);
+
+  const [viewingUser, setViewingUser] = useState<UserRow | null>(null);
+  const [creatingUser, setCreatingUser] = useState<CreateFormState | null>(null);
+  const [editingUser, setEditingUser] = useState<UserRow | null>(null);
+  const [editForm, setEditForm] = useState<EditFormState | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const isAuthenticated = Boolean(token.trim());
+
+  const navigate = (path: string, replace = false) => {
+    if (window.location.pathname !== path) {
+      if (replace) {
+        window.history.replaceState({}, "", path);
+      } else {
+        window.history.pushState({}, "", path);
+      }
+    }
+    setCurrentPath(path);
+  };
+
+  useEffect(() => {
+    localStorage.setItem("admin_user_token", token);
+  }, [token]);
+
+  useEffect(() => {
+    const syncPath = () => setCurrentPath(window.location.pathname || "/");
+    window.addEventListener("popstate", syncPath);
+
+    if ((window.location.pathname || "/") === "/") {
+      navigate("/login", true);
+    } else {
+      syncPath();
+    }
+
+    return () => {
+      window.removeEventListener("popstate", syncPath);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated && currentPath !== "/login") {
+      navigate("/login", true);
+      return;
+    }
+
+    if (isAuthenticated && currentPath !== "/admin") {
+      navigate("/admin", true);
+    }
+  }, [isAuthenticated, currentPath]);
+
+  const loadUsers = async () => {
+    if (!token) {
+      setUsers([]);
+      setError(null);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const [profileResult, usersResult] = await Promise.allSettled([
+        fetchJson<ApiUser>(`${API_BASE_URLS.user}/users`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetchJson<ApiUser[]>(`${API_BASE_URLS.user}/users/all`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      if (profileResult.status === "fulfilled") {
+        const firstName = profileResult.value.firstName || "";
+        const lastName = profileResult.value.lastName || "";
+        const fullName = `${firstName} ${lastName}`.trim();
+        if (fullName) {
+          setAdminName(fullName);
+        } else if (profileResult.value.email) {
+          setAdminName(profileResult.value.email);
+        }
+      }
+
+      if (usersResult.status === "fulfilled") {
+        setUsers(usersResult.value.map(mapApiUser));
+      } else {
+        throw usersResult.reason;
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message.toLowerCase() : "";
+      if (message.includes("not authorized") || message.includes("401")) {
+        setToken("");
+        setUsers([]);
+        setError(null);
+        setLoginError("Session expired or invalid token. Please login again.");
+        navigate("/login", true);
+        return;
+      }
+
+      setUsers([]);
+      setError("Unable to load users. Check User service status and CORS settings.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadUsers();
+  }, [token]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, roleFilter, statusFilter]);
+
+  useEffect(() => {
+    setProductPage(1);
+  }, [productSearch]);
+
+  const filteredUsers = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+
+    return users.filter((user) => {
+      if (roleFilter !== "All Roles" && user.role !== roleFilter) {
+        return false;
+      }
+      if (statusFilter !== "All Statuses" && user.status !== statusFilter) {
+        return false;
+      }
+      if (!keyword) {
+        return true;
+      }
+      return (
+        user.fullName.toLowerCase().includes(keyword)
+        || user.email.toLowerCase().includes(keyword)
+        || user.phone.toLowerCase().includes(keyword)
+      );
+    });
+  }, [users, search, roleFilter, statusFilter]);
+
+  const pageCount = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const pagedUsers = filteredUsers.slice(pageStart, pageStart + PAGE_SIZE);
+
+  const filteredProducts = useMemo(() => {
+    const keyword = productSearch.trim().toLowerCase();
+    if (!keyword) {
+      return products;
+    }
+
+    return products.filter((product) => (
+      product.name.toLowerCase().includes(keyword)
+      || product.category.toLowerCase().includes(keyword)
+      || product.description.toLowerCase().includes(keyword)
+    ));
+  }, [products, productSearch]);
+
+  const productPageCount = Math.max(1, Math.ceil(filteredProducts.length / PRODUCT_PAGE_SIZE));
+  const currentProductPage = Math.min(productPage, productPageCount);
+  const productPageStart = (currentProductPage - 1) * PRODUCT_PAGE_SIZE;
+  const pagedProducts = filteredProducts.slice(productPageStart, productPageStart + PRODUCT_PAGE_SIZE);
+
+  useEffect(() => {
+    setSelected((prev) => prev.filter((id) => pagedUsers.some((user) => user.id === id)));
+  }, [pagedUsers]);
+
+  const loadProducts = async () => {
+    setProductLoading(true);
+    setProductError(null);
+
+    try {
+      const productList = await fetchJson<ApiProduct[]>(`${API_BASE_URLS.product}/products`);
+      if (!Array.isArray(productList)) {
+        throw new Error("Invalid product list response");
+      }
+      setProducts(productList.map(mapApiProduct));
+    } catch {
+      setProducts([]);
+      setProductError("Unable to load products. Check Product service status and CORS settings.");
+    } finally {
+      setProductLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!token || activeTab !== "products") {
+      return;
+    }
+    void loadProducts();
+  }, [token, activeTab]);
+
+  const allInPageSelected = pagedUsers.length > 0 && pagedUsers.every((user) => selected.includes(user.id));
+
+  const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!authEmail.trim() || !authPassword.trim()) {
+      setLoginError("Email and password are required.");
+      return;
+    }
+
+    setLoggingIn(true);
+    setLoginError(null);
+    setActionMessage(null);
+
+    try {
+      const accessToken = await fetchJson<string>(`${API_BASE_URLS.user}/users/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: authEmail.trim(),
+          password: authPassword,
+        }),
+      });
+      setToken(accessToken);
+      setAuthPassword("");
+      navigate("/admin", true);
+    } catch {
+      setLoginError("Login failed. Please verify email/password from User service.");
+    } finally {
+      setLoggingIn(false);
+    }
+  };
+
+  const toggleCurrentPageSelection = () => {
+    if (allInPageSelected) {
+      setSelected((prev) => prev.filter((id) => !pagedUsers.some((user) => user.id === id)));
+      return;
+    }
+
+    const next = new Set(selected);
+    pagedUsers.forEach((user) => next.add(user.id));
+    setSelected(Array.from(next));
+  };
+
+  const toggleSingleSelection = (id: string) => {
+    if (selected.includes(id)) {
+      setSelected((prev) => prev.filter((item) => item !== id));
+      return;
+    }
+    setSelected((prev) => [...prev, id]);
+  };
+
+  const openViewUser = async (id: string) => {
+    if (!token) {
+      setActionMessage("Please login before viewing user details.");
+      return;
+    }
+
+    setActionLoadingId(id);
+    setActionMessage(null);
+
+    try {
+      const user = await fetchJson<ApiUser>(`${API_BASE_URLS.user}/users/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setViewingUser(mapApiUser(user));
+    } catch {
+      setActionMessage("Unable to load user details.");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const openEditUser = (user: UserRow) => {
+    setEditingUser(user);
+    setEditForm(toEditState(user));
+    setActionMessage(null);
+  };
+
+  const openCreateUser = () => {
+    setCreatingUser(createFormInitialState());
+    setActionMessage(null);
+  };
+
+  const submitCreateUser = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!creatingUser || !token) {
+      setActionMessage("Missing form data or token to create user.");
+      return;
+    }
+
+    if (!creatingUser.email.trim() || !creatingUser.password.trim() || !creatingUser.firstName.trim() || !creatingUser.lastName.trim()) {
+      setActionMessage("First name, last name, email and password are required.");
+      return;
+    }
+
+    setActionLoadingId("create");
+    setActionMessage(null);
+
+    try {
+      const payload: Record<string, string | number> = {
+        firstName: creatingUser.firstName.trim(),
+        lastName: creatingUser.lastName.trim(),
+        email: creatingUser.email.trim(),
+        password: creatingUser.password,
+        phone: creatingUser.phone.trim(),
+        gender: creatingUser.gender.trim(),
+        role: creatingUser.role,
+        status: creatingUser.status,
+      };
+
+      const ageNumber = Number(creatingUser.age);
+      if (creatingUser.age.trim() && Number.isFinite(ageNumber)) {
+        payload.age = ageNumber;
+      }
+
+      await fetchJson<{ id: string; role: string; status: string }>(`${API_BASE_URLS.user}/users`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      setCreatingUser(null);
+      setActionMessage("User created successfully.");
+      await loadUsers();
+    } catch {
+      setActionMessage("Unable to create user. Check required fields and backend validation.");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const submitEditUser = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!editingUser || !editForm || !token) {
+      setActionMessage("Missing user or token to update.");
+      return;
+    }
+
+    setActionLoadingId(editingUser.id);
+    setActionMessage(null);
+
+    try {
+      const payload: Record<string, string | number> = {
+        firstName: editForm.firstName.trim(),
+        lastName: editForm.lastName.trim(),
+        email: editForm.email.trim(),
+        phone: editForm.phone.trim(),
+        gender: editForm.gender.trim(),
+        role: editForm.role,
+        status: editForm.status,
+      };
+
+      const ageNumber = Number(editForm.age);
+      if (editForm.age.trim() && Number.isFinite(ageNumber)) {
+        payload.age = ageNumber;
+      }
+
+      const updated = await fetchJson<ApiUser>(`${API_BASE_URLS.user}/users/${editingUser.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const mapped = mapApiUser(updated);
+      setUsers((prev) => prev.map((item) => (item.id === mapped.id ? mapped : item)));
+      setViewingUser((prev) => (prev && prev.id === mapped.id ? mapped : prev));
+      setEditingUser(null);
+      setEditForm(null);
+      setActionMessage("User updated successfully.");
+    } catch {
+      setActionMessage("Unable to update user. Check backend validation rules.");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const deleteUser = async (id: string) => {
+    if (!token) {
+      setActionMessage("Please login before deleting a user.");
+      return;
+    }
+
+    const confirmed = window.confirm("Delete this user permanently?");
+    if (!confirmed) {
+      return;
+    }
+
+    setActionLoadingId(id);
+    setActionMessage(null);
+
+    try {
+      await fetchJson<{ message: string; id: string }>(`${API_BASE_URLS.user}/users/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setUsers((prev) => prev.filter((item) => item.id !== id));
+      setSelected((prev) => prev.filter((item) => item !== id));
+      setViewingUser((prev) => (prev?.id === id ? null : prev));
+      setEditingUser((prev) => (prev?.id === id ? null : prev));
+      setEditForm((prev) => (editingUser?.id === id ? null : prev));
+      setActionMessage("User deleted successfully.");
+    } catch {
+      setActionMessage("Unable to delete user.");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleLogout = () => {
+    setToken("");
+    setUsers([]);
+    setSelected([]);
+    setViewingUser(null);
+    setEditingUser(null);
+    setEditForm(null);
+    setError(null);
+    setLoginError(null);
+    setActionMessage("Da dang xuat thanh cong.");
+    localStorage.removeItem("admin_user_token");
+    navigate("/login", true);
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="login-screen">
+        <section className="login-card">
+          <h1>Admin Portal Login</h1>
+          <p>Dang nhap truoc de vao trang admin va su dung day du chuc nang.</p>
+          <form className="login-form" onSubmit={handleLogin}>
+            <input
+              type="email"
+              placeholder="Email"
+              value={authEmail}
+              onChange={(event) => setAuthEmail(event.target.value)}
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              value={authPassword}
+              onChange={(event) => setAuthPassword(event.target.value)}
+            />
+            <button type="submit" className="primary-btn" disabled={loggingIn}>
+              {loggingIn ? "Logging in..." : "Login"}
+            </button>
+          </form>
+          {loginError ? <div className="inline-error">{loginError}</div> : null}
+        </section>
+      </div>
+    );
+  }
 
   return (
-    <div className="admin-root">
+    <div className="admin-layout">
       <aside className="sidebar">
         <div className="brand">
-          <div className="brand-logo" />
+          <div className="brand-mark" />
           <span>AdminPanel</span>
         </div>
 
-        <nav className="menu">
-          <button className={page === "dashboard" ? "menu-item active" : "menu-item"} onClick={() => setPage("dashboard")}>
-            Dashboard
-          </button>
-          <button className={page === "products" ? "menu-item active" : "menu-item"} onClick={() => setPage("products")}>
-            Products
-          </button>
-          <button className="menu-item" disabled>
+        <nav className="sidebar-menu">
+          <button type="button" className="menu-btn">Dashboard</button>
+          <button
+            type="button"
+            className={`menu-btn ${activeTab === "users" ? "active" : ""}`}
+            onClick={() => setActiveTab("users")}
+          >
             Users
           </button>
-          <button className="menu-item" disabled>
-            Orders
+          <button type="button" className="menu-btn">Orders</button>
+          <button
+            type="button"
+            className={`menu-btn ${activeTab === "products" ? "active" : ""}`}
+            onClick={() => setActiveTab("products")}
+          >
+            Products
           </button>
-          <button className="menu-item" disabled>
-            Settings
-          </button>
+          <button type="button" className="menu-btn">Analytics</button>
+          <button type="button" className="menu-btn">Settings</button>
         </nav>
 
-        <button className="logout">Logout</button>
+        <button
+          type="button"
+          className="menu-btn logout"
+          onClick={handleLogout}
+        >
+          Logout
+        </button>
       </aside>
 
-      <main className="content">
+      <main className="main">
         <header className="topbar">
-          <h1>{pageTitle}</h1>
-          <div className="topbar-user">
-            <div className="alert-dot" />
-            <span>Admin</span>
-            <div className="avatar">A</div>
+          <h1>{activeTab === "users" ? "Users" : "Products"}</h1>
+          <div className="topbar-right">
+            <div className="admin-profile">
+              <span>{adminName}</span>
+              <div className="avatar">{toInitials(adminName, "", adminName)}</div>
+            </div>
+            <button type="button" className="ghost-btn logout-top" onClick={handleLogout}>Logout</button>
           </div>
         </header>
 
-        {page === "dashboard" ? <DashboardView /> : <ProductsView rows={products} />}
-      </main>
-    </div>
-  );
-}
+        <section className="content-area">
+          <div className="breadcrumb">Dashboard / <strong>{activeTab === "users" ? "Users" : "Products"}</strong></div>
+          {error ? <div className="inline-error">{error}</div> : null}
+          {productError && activeTab === "products" ? <div className="inline-error">{productError}</div> : null}
+          {actionMessage ? <div className="inline-info">{actionMessage}</div> : null}
 
-function DashboardView() {
-  return (
-    <section className="dashboard">
-      <div className="kpi-grid">
-        {kpiCards.map((item) => (
-          <article key={item.title} className={`kpi-card ${item.tone}`}>
-            <p>{item.title}</p>
-            <h2>{item.value}</h2>
-            <span>{item.delta}</span>
-          </article>
-        ))}
-      </div>
-
-      <div className="grid-two">
-        <article className="panel large">
-          <div className="panel-header">
-            <h3>Sales Overview</h3>
-            <div className="tabs">
-              <button className="tab active">Monthly</button>
-              <button className="tab">Weekly</button>
-              <button className="tab">Daily</button>
+          {activeTab === "users" ? (
+          <>
+          <section className="panel heading-panel">
+            <h2>Users</h2>
+            <div className="search-holder">
+              <input
+                type="text"
+                placeholder="Search users..."
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+              />
             </div>
-          </div>
-          <svg viewBox="0 0 600 220" className="chart" role="img" aria-label="Sales chart">
-            <polyline points="20,170 100,120 180,95 260,130 340,140 420,115 500,58 580,42" className="line blue" />
-            <polyline points="20,185 100,150 180,125 260,155 340,165 420,145 500,110 580,85" className="line green" />
-          </svg>
-        </article>
+          </section>
 
-        <article className="panel">
-          <div className="panel-header">
-            <h3>Recent Orders</h3>
-          </div>
-          <table className="simple-table">
-            <thead>
-              <tr>
-                <th>Order ID</th>
-                <th>Customer</th>
-                <th>Status</th>
-                <th>Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((order) => (
-                <tr key={order.id}>
-                  <td>{order.id}</td>
-                  <td>{order.customer}</td>
-                  <td>
-                    <span className={`pill ${order.status.toLowerCase()}`}>{order.status}</span>
-                  </td>
-                  <td>${order.amount.toFixed(2)}</td>
-                </tr>
+          <section className="panel table-panel">
+            <div className="table-toolbar">
+              <div className="toolbar-left">
+                <input
+                  type="text"
+                  placeholder="Search users..."
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                />
+                <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value as Role | "All Roles")}>
+                  {roleFilters.map((item) => (
+                    <option key={item} value={item}>{item}</option>
+                  ))}
+                </select>
+                <select
+                  value={statusFilter}
+                  onChange={(event) => setStatusFilter(event.target.value as UserStatus | "All Statuses")}
+                >
+                  {statusFilters.map((item) => (
+                    <option key={item} value={item}>{item}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="toolbar-right">
+                <button type="button" className="ghost-btn" disabled={selected.length === 0}>Bulk Actions</button>
+                <button type="button" className="primary-btn" onClick={openCreateUser}>+ Add User</button>
+              </div>
+            </div>
+
+            <div className="table-meta">
+              <span>
+                Showing {pagedUsers.length} of {filteredUsers.length} users
+              </span>
+              <div className="pager-mini">
+                <button type="button" onClick={() => setPage((prev) => Math.max(1, prev - 1))} disabled={currentPage === 1}>
+                  Prev
+                </button>
+                <button type="button" onClick={() => setPage((prev) => Math.min(pageCount, prev + 1))} disabled={currentPage === pageCount}>
+                  Next
+                </button>
+              </div>
+            </div>
+
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>
+                      <input type="checkbox" checked={allInPageSelected} onChange={toggleCurrentPageSelection} />
+                    </th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Joined</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr>
+                      <td colSpan={7} className="empty-row">Loading users from API...</td>
+                    </tr>
+                  ) : null}
+
+                  {!loading && pagedUsers.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="empty-row">No users found for current filters.</td>
+                    </tr>
+                  ) : null}
+
+                  {!loading
+                    ? pagedUsers.map((user) => (
+                        <tr key={user.id}>
+                          <td>
+                            <input
+                              type="checkbox"
+                              checked={selected.includes(user.id)}
+                              onChange={() => toggleSingleSelection(user.id)}
+                            />
+                          </td>
+                          <td>
+                            <div className="name-cell">
+                              <div className="avatar small">{user.initials}</div>
+                              <span>{user.fullName}</span>
+                            </div>
+                          </td>
+                          <td>{user.email}</td>
+                          <td>{user.role}</td>
+                          <td>
+                            <span className={user.status === "Active" ? "status active" : "status inactive"}>{user.status}</span>
+                          </td>
+                          <td>{user.joined}</td>
+                          <td>
+                            <div className="actions">
+                              <button type="button" onClick={() => openEditUser(user)} disabled={actionLoadingId === user.id}>Edit</button>
+                              <button type="button" onClick={() => openViewUser(user.id)} disabled={actionLoadingId === user.id}>View</button>
+                              <button
+                                type="button"
+                                className="danger"
+                                onClick={() => deleteUser(user.id)}
+                                disabled={actionLoadingId === user.id}
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    : null}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="pagination">
+              <button type="button" onClick={() => setPage(1)} disabled={currentPage === 1}>First</button>
+              <button type="button" onClick={() => setPage((prev) => Math.max(1, prev - 1))} disabled={currentPage === 1}>
+                Prev
+              </button>
+              {Array.from({ length: pageCount }, (_, index) => index + 1).map((pageNumber) => (
+                <button
+                  key={pageNumber}
+                  type="button"
+                  className={pageNumber === currentPage ? "active" : ""}
+                  onClick={() => setPage(pageNumber)}
+                >
+                  {pageNumber}
+                </button>
               ))}
-            </tbody>
-          </table>
-        </article>
-      </div>
+              <button
+                type="button"
+                onClick={() => setPage((prev) => Math.min(pageCount, prev + 1))}
+                disabled={currentPage === pageCount}
+              >
+                Next
+              </button>
+              <button type="button" onClick={() => setPage(pageCount)} disabled={currentPage === pageCount}>Last</button>
+            </div>
+          </section>
+          </>
+          ) : (
+          <>
+          <section className="panel heading-panel">
+            <h2>Products</h2>
+            <div className="search-holder">
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={productSearch}
+                onChange={(event) => setProductSearch(event.target.value)}
+              />
+            </div>
+          </section>
 
-      <div className="grid-three">
-        <article className="panel">
-          <div className="panel-header">
-            <h3>Top Products</h3>
-          </div>
-          <ul className="list">
-            {topProducts.map((item) => (
-              <li key={item[0]}>
-                <span>{item[0]}</span>
-                <small>{item[1]}</small>
-              </li>
-            ))}
-          </ul>
-        </article>
+          <section className="panel table-panel">
+            <div className="table-meta">
+              <span>
+                Showing {pagedProducts.length} of {filteredProducts.length} products
+              </span>
+              <div className="pager-mini">
+                <button type="button" onClick={() => setProductPage((prev) => Math.max(1, prev - 1))} disabled={currentProductPage === 1}>
+                  Prev
+                </button>
+                <button type="button" onClick={() => setProductPage((prev) => Math.min(productPageCount, prev + 1))} disabled={currentProductPage === productPageCount}>
+                  Next
+                </button>
+              </div>
+            </div>
 
-        <article className="panel">
-          <div className="panel-header">
-            <h3>Latest Activity</h3>
-          </div>
-          <ul className="list">
-            {activities.map((activity) => (
-              <li key={activity[0]}>
-                <span>{activity[0]}</span>
-                <small>{activity[1]}</small>
-              </li>
-            ))}
-          </ul>
-        </article>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>ID</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {productLoading ? (
+                    <tr>
+                      <td colSpan={4} className="empty-row">Loading products from API...</td>
+                    </tr>
+                  ) : null}
 
-        <article className="panel">
-          <div className="panel-header">
-            <h3>Messages</h3>
-          </div>
-          <ul className="message-list">
-            {messages.map((message) => (
-              <li key={message[0]}>
-                <b>{message[0]}:</b> {message[1]}
-              </li>
-            ))}
-          </ul>
-          <button className="btn-view">View All</button>
-        </article>
-      </div>
-    </section>
-  );
-}
+                  {!productLoading && pagedProducts.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="empty-row">No products found for current filters.</td>
+                    </tr>
+                  ) : null}
 
-function ProductsView({ rows }: { rows: ProductRow[] }) {
-  return (
-    <section className="products-page">
-      <div className="panel search-wrap">
-        <h2>Products</h2>
-        <input placeholder="Search product..." />
-      </div>
+                  {!productLoading
+                    ? pagedProducts.map((product) => (
+                        <tr key={product.id}>
+                          <td>
+                            <div className="name-cell">
+                              <div className="avatar small">PR</div>
+                              <span>{product.name}</span>
+                            </div>
+                          </td>
+                          <td>{product.category}</td>
+                          <td>{formatVnd(product.price)}</td>
+                          <td>{product.id}</td>
+                        </tr>
+                      ))
+                    : null}
+                </tbody>
+              </table>
+            </div>
 
-      <div className="panel toolbar">
-        <div className="toolbar-left">
-          <input placeholder="Search product..." />
-          <select defaultValue="All Categories">
-            <option>All Categories</option>
-          </select>
-          <select defaultValue="All Statuses">
-            <option>All Statuses</option>
-          </select>
+            <div className="pagination">
+              <button type="button" onClick={() => setProductPage(1)} disabled={currentProductPage === 1}>First</button>
+              <button type="button" onClick={() => setProductPage((prev) => Math.max(1, prev - 1))} disabled={currentProductPage === 1}>
+                Prev
+              </button>
+              {Array.from({ length: productPageCount }, (_, index) => index + 1).map((pageNumber) => (
+                <button
+                  key={pageNumber}
+                  type="button"
+                  className={pageNumber === currentProductPage ? "active" : ""}
+                  onClick={() => setProductPage(pageNumber)}
+                >
+                  {pageNumber}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setProductPage((prev) => Math.min(productPageCount, prev + 1))}
+                disabled={currentProductPage === productPageCount}
+              >
+                Next
+              </button>
+              <button type="button" onClick={() => setProductPage(productPageCount)} disabled={currentProductPage === productPageCount}>Last</button>
+            </div>
+          </section>
+          </>
+          )}
+        </section>
+      </main>
+
+      {viewingUser ? (
+        <div className="modal-backdrop" onClick={() => setViewingUser(null)}>
+          <article className="modal" onClick={(event) => event.stopPropagation()}>
+            <h3>User Details</h3>
+            <div className="modal-grid">
+              <p><strong>Name:</strong> {viewingUser.fullName}</p>
+              <p><strong>Email:</strong> {viewingUser.email}</p>
+              <p><strong>Role:</strong> {viewingUser.role}</p>
+              <p><strong>Status:</strong> {viewingUser.status}</p>
+              <p><strong>Age:</strong> {viewingUser.age ?? "-"}</p>
+              <p><strong>Phone:</strong> {viewingUser.phone || "-"}</p>
+              <p><strong>Gender:</strong> {viewingUser.gender || "-"}</p>
+              <p><strong>Joined:</strong> {viewingUser.joined}</p>
+              <p><strong>Updated:</strong> {viewingUser.updatedAt}</p>
+              <p><strong>ID:</strong> {viewingUser.id}</p>
+            </div>
+            <div className="modal-actions">
+              <button type="button" className="ghost-btn" onClick={() => setViewingUser(null)}>Close</button>
+            </div>
+          </article>
         </div>
-        <div className="toolbar-right">
-          <button className="btn-secondary">+ Add Product</button>
-          <button className="btn-primary">+ Add Product</button>
-        </div>
-      </div>
+      ) : null}
 
-      <article className="panel products-table-wrap">
-        <div className="table-title">Showing {rows.length} of 120 Products</div>
-        <table className="products-table">
-          <thead>
-            <tr>
-              <th></th>
-              <th>Image</th>
-              <th>Product Name</th>
-              <th>Category</th>
-              <th>Stock</th>
-              <th>Status</th>
-              <th>Price</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.id}>
-                <td>
-                  <input type="checkbox" aria-label={`Select ${row.name}`} />
-                </td>
-                <td>
-                  <div className="thumb">{row.image}</div>
-                </td>
-                <td>{row.name}</td>
-                <td>{row.category}</td>
-                <td>{row.stock}</td>
-                <td>
-                  <span className={`pill ${row.status.toLowerCase().replace(" ", "-")}`}>{row.status}</span>
-                </td>
-                <td>${row.price.toFixed(2)}</td>
-                <td>
-                  <div className="actions">Edit | Del | More</div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {editingUser && editForm ? (
+        <div className="modal-backdrop" onClick={() => { setEditingUser(null); setEditForm(null); }}>
+          <article className="modal" onClick={(event) => event.stopPropagation()}>
+            <h3>Edit User</h3>
+            <form className="edit-form" onSubmit={submitEditUser}>
+              <label>
+                First Name
+                <input
+                  value={editForm.firstName}
+                  onChange={(event) => setEditForm((prev) => (prev ? { ...prev, firstName: event.target.value } : prev))}
+                />
+              </label>
+              <label>
+                Last Name
+                <input
+                  value={editForm.lastName}
+                  onChange={(event) => setEditForm((prev) => (prev ? { ...prev, lastName: event.target.value } : prev))}
+                />
+              </label>
+              <label>
+                Email
+                <input
+                  type="email"
+                  value={editForm.email}
+                  onChange={(event) => setEditForm((prev) => (prev ? { ...prev, email: event.target.value } : prev))}
+                />
+              </label>
+              <label>
+                Age
+                <input
+                  type="number"
+                  value={editForm.age}
+                  onChange={(event) => setEditForm((prev) => (prev ? { ...prev, age: event.target.value } : prev))}
+                />
+              </label>
+              <label>
+                Phone
+                <input
+                  value={editForm.phone}
+                  onChange={(event) => setEditForm((prev) => (prev ? { ...prev, phone: event.target.value } : prev))}
+                />
+              </label>
+              <label>
+                Gender
+                <input
+                  value={editForm.gender}
+                  onChange={(event) => setEditForm((prev) => (prev ? { ...prev, gender: event.target.value } : prev))}
+                />
+              </label>
+              <label>
+                Role
+                <select
+                  value={editForm.role}
+                  onChange={(event) => setEditForm((prev) => (prev ? { ...prev, role: event.target.value as Role } : prev))}
+                >
+                  <option value="Admin">Admin</option>
+                  <option value="Moderator">Moderator</option>
+                  <option value="User">User</option>
+                </select>
+              </label>
+              <label>
+                Status
+                <select
+                  value={editForm.status}
+                  onChange={(event) => setEditForm((prev) => (prev ? { ...prev, status: event.target.value as UserStatus } : prev))}
+                >
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                </select>
+              </label>
 
-        <div className="pager">
-          <button className="page-item">1</button>
-          <button className="page-item">2</button>
-          <button className="page-item">3</button>
-          <button className="page-item">4</button>
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="ghost-btn"
+                  onClick={() => {
+                    setEditingUser(null);
+                    setEditForm(null);
+                  }}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="primary-btn" disabled={actionLoadingId === editingUser.id}>
+                  {actionLoadingId === editingUser.id ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </form>
+          </article>
         </div>
-      </article>
-    </section>
+      ) : null}
+
+      {creatingUser ? (
+        <div className="modal-backdrop" onClick={() => setCreatingUser(null)}>
+          <article className="modal" onClick={(event) => event.stopPropagation()}>
+            <h3>Add User</h3>
+            <form className="edit-form" onSubmit={submitCreateUser}>
+              <label>
+                First Name
+                <input
+                  value={creatingUser.firstName}
+                  onChange={(event) => setCreatingUser((prev) => (prev ? { ...prev, firstName: event.target.value } : prev))}
+                />
+              </label>
+              <label>
+                Last Name
+                <input
+                  value={creatingUser.lastName}
+                  onChange={(event) => setCreatingUser((prev) => (prev ? { ...prev, lastName: event.target.value } : prev))}
+                />
+              </label>
+              <label>
+                Email
+                <input
+                  type="email"
+                  value={creatingUser.email}
+                  onChange={(event) => setCreatingUser((prev) => (prev ? { ...prev, email: event.target.value } : prev))}
+                />
+              </label>
+              <label>
+                Password
+                <input
+                  type="password"
+                  value={creatingUser.password}
+                  onChange={(event) => setCreatingUser((prev) => (prev ? { ...prev, password: event.target.value } : prev))}
+                />
+              </label>
+              <label>
+                Age
+                <input
+                  type="number"
+                  value={creatingUser.age}
+                  onChange={(event) => setCreatingUser((prev) => (prev ? { ...prev, age: event.target.value } : prev))}
+                />
+              </label>
+              <label>
+                Phone
+                <input
+                  value={creatingUser.phone}
+                  onChange={(event) => setCreatingUser((prev) => (prev ? { ...prev, phone: event.target.value } : prev))}
+                />
+              </label>
+              <label>
+                Gender
+                <input
+                  value={creatingUser.gender}
+                  onChange={(event) => setCreatingUser((prev) => (prev ? { ...prev, gender: event.target.value } : prev))}
+                />
+              </label>
+              <label>
+                Role
+                <select
+                  value={creatingUser.role}
+                  onChange={(event) => setCreatingUser((prev) => (prev ? { ...prev, role: event.target.value as Role } : prev))}
+                >
+                  <option value="Admin">Admin</option>
+                  <option value="Moderator">Moderator</option>
+                  <option value="User">User</option>
+                </select>
+              </label>
+              <label>
+                Status
+                <select
+                  value={creatingUser.status}
+                  onChange={(event) => setCreatingUser((prev) => (prev ? { ...prev, status: event.target.value as UserStatus } : prev))}
+                >
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                </select>
+              </label>
+
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="ghost-btn"
+                  onClick={() => setCreatingUser(null)}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="primary-btn" disabled={actionLoadingId === "create"}>
+                  {actionLoadingId === "create" ? "Creating..." : "Create User"}
+                </button>
+              </div>
+            </form>
+          </article>
+        </div>
+      ) : null}
+    </div>
   );
 }
 

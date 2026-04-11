@@ -1,10 +1,11 @@
-const asyncHandler = require("express-async-handler")
+const asyncHandler = require("express-async-handler");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
 const validateToken = asyncHandler(async (req, res, next) => {
-    const authHeader = req.headers.authorization || "";
-    if (!authHeader.startsWith("Bearer ")) {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
         return res.status(401).json({ message: "user is not authorized" });
     }
 

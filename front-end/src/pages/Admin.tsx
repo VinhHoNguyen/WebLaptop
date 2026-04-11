@@ -28,6 +28,15 @@ type ProductFormState = {
   keys: string;
 };
 
+type ProductApiItem = {
+  _id: string;
+  name: string;
+  description?: string;
+  category?: string;
+  image?: string;
+  price?: number;
+};
+
 const toCurrency = (value: number): string => {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
@@ -60,6 +69,8 @@ function Admin() {
   const [users, setUsers] = useState<AdminUser[]>(seedUsers);
   const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [productLoading, setProductLoading] = useState(false);
+  const [productError, setProductError] = useState<string | null>(null);
   const [productFilter, setProductFilter] = useState({
     category: "all",
     platform: "all",
@@ -73,6 +84,9 @@ function Admin() {
   }, []);
 
   const fetchProducts = async () => {
+    setProductLoading(true);
+    setProductError(null);
+
     try {
       const response = await fetch(`${API_BASE_URLS.product}/products`, {
         headers: {
@@ -81,17 +95,18 @@ function Admin() {
       });
 
       if (!response.ok) {
+        setProducts([]);
+        setProductError(`Khong tai duoc danh sach game (HTTP ${response.status}).`);
         return;
       }
 
-      const data = (await response.json()) as Array<{
-        _id: string;
-        name: string;
-        description?: string;
-        category?: string;
-        image?: string;
-        price?: number;
-      }>;
+      const data = (await response.json()) as ProductApiItem[];
+
+      if (!Array.isArray(data)) {
+        setProducts([]);
+        setProductError("Du lieu tu Product service khong dung dinh dang danh sach.");
+        return;
+      }
 
       const normalized = data.map((item): AdminProduct => {
         const keySeed: GameKey[] = Array.from({ length: 5 }, (_, idx) => ({
@@ -122,6 +137,10 @@ function Admin() {
       setProducts(normalized);
     } catch (error) {
       console.error(error);
+      setProducts([]);
+      setProductError("Khong ket noi duoc Product service. Vui long kiem tra backend/CORS.");
+    } finally {
+      setProductLoading(false);
     }
   };
 
@@ -697,6 +716,21 @@ function Admin() {
                     </tr>
                   </thead>
                   <tbody>
+                    {productLoading && (
+                      <tr>
+                        <td colSpan={8}>Dang tai danh sach game tu Product service...</td>
+                      </tr>
+                    )}
+                    {!productLoading && productError && (
+                      <tr>
+                        <td colSpan={8}>{productError}</td>
+                      </tr>
+                    )}
+                    {!productLoading && !productError && filteredProducts.length === 0 && (
+                      <tr>
+                        <td colSpan={8}>Chua co san pham nao tu API.</td>
+                      </tr>
+                    )}
                     {filteredProducts.map((product) => {
                       const availableKeys = product.keys.filter((key) => key.status === "available").length;
                       return (

@@ -13,49 +13,41 @@ npm install
 
 ## Usage
 
-1. Create a .env file in the root directory and add the following environment variables (replace all #### with your own values):
+1. Create a `.env` file in the root directory and add the following environment variables (replace all #### with your own values):
 ```bash
-PORT=####
 MONGO_USERNAME=####
 MONGO_PASSWORD=####
 MONGO_CLUSTER=####
 MONGO_DBNAME=####
 ACCESS_TOKEN=####
+VITE_USER_API_URL=http://localhost:3001
+VITE_PRODUCT_API_URL=http://localhost:3002
+VITE_CART_API_URL=http://localhost:3003
 ```
-2. Run the following command to start the application:
+2. Start the full stack with one command:
 ```bash
-npm run dev
+npm run docker:up
 ```
-3. Open the following URL in your browser:
-```bash
-http://localhost:<port_no>/
-```
+3. Open the application in your browser:
+- Front-end: http://localhost:5173
+- Admin portal: http://localhost:5174
+- User service: http://localhost:3001
+- Product service: http://localhost:3002
+- Cart service: http://localhost:3003
 
-4. Or you can use docker-compose to run the application:
+4. To stop the stack:
 ```bash
-docker-compose up
+npm run docker:down
 ```
-5. Show the running containers:
+5. If you want to see logs:
 ```bash
-docker ps
+npm run docker:logs
 ```
-6. Get the container ip address:
+6. Docker Compose is configured with `restart: unless-stopped`, so the stack will come back automatically after reboot once Docker Desktop starts.
+
+If you need the production images on a server, use:
 ```bash
-docker inspect <container_id> | grep "IPAddress"
-```
-7. Open the following URL in your browser:
-```bash
-http://<container_ip_address>:<port_no>/
-```
-8. To run the frontend application, run the following command:
-```bash
-cd front-end
-npm install
-npm run dev
-```
-9. Open the following URL in your browser:
-```bash
-http://localhost:5173/
+npm run docker:prod:up
 ```
 ## CI/CD
 

@@ -12,6 +12,7 @@ import OrderFail from "./pages/OrderFail";
 import OrderHistory from "./pages/OrderHistory";
 import OrderMomo from "./pages/OrderMomo";
 import OrderSuccess from "./pages/OrderSuccess";
+import Admin from "./pages/Admin";
 import NavBar from "./component/NavBar";
 function App() {
   return (
@@ -24,6 +25,8 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/productInfo/:productId" element={<ProductInfo />} />
+          <Route path="/productinfo/:productId" element={<ProductInfo />} />
+          <Route path="/admin" element={<Admin />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<CheckOut />} />
           <Route path="/success" element={<OrderSuccess />} />

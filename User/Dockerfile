@@ -2,10 +2,12 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-COPY . /app
+COPY package*.json ./
+
+RUN npm ci --omit=dev
+
+COPY . .
 
 EXPOSE 3001
 
-RUN npm install
-
-CMD npm run dev
+CMD ["node", "server.js"]

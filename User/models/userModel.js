@@ -33,6 +33,18 @@ const userSchema = mongoose.Schema({
     gender: {
         type: String,
         // enum: ['male', 'female']
+    },
+
+    role: {
+        type: String,
+        enum: ["Admin", "Moderator", "User"],
+        default: "User"
+    },
+
+    status: {
+        type: String,
+        enum: ["Active", "Inactive"],
+        default: "Active"
     }
 
 },
