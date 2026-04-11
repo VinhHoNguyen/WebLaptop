@@ -1,181 +1,321 @@
-@import url('https://fonts.googleapis.com/css?family=Poppins:400,700&display=swap');
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  outline: none;
-  font-family: 'Poppins', sans-serif;
+.wrapper_loader {
+  width: 100%;
+  height: 100vh;
+  background-color: rgba(8, 10, 18, 0.6);
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
 }
 
-body {
-  
+.loader {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 12px solid rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  border-top: 12px solid var(--accent-2);
+  width: 90px;
+  height: 90px;
+  animation: spin 1.6s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: translateX(-50%) rotate(0deg);
+  }
+  100% {
+    transform: translateX(-50%) rotate(360deg);
+  }
+}
+
+.hide {
+  display: none;
+}
+
+#map {
+  z-index: 1 !important;
+}
+
+.breadcrumb-area {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 18px 0;
+}
+
+.breadcrumb-content ul {
+  display: flex;
+  gap: 10px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.breadcrumb-content a {
+  color: var(--accent-2);
+  text-decoration: none;
+}
+
+.breadcrumb-content .active {
+  color: var(--text);
+}
+
+.checkbox-form {
+  background: var(--surface);
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 24px rgba(4, 6, 12, 0.45);
+}
+
+.checkbox-form h3 {
+  margin-bottom: 20px;
+  color: var(--text);
+  font-size: 20px;
+}
+
+.checkout-form-list {
+  margin-bottom: 16px;
+}
+
+.checkout-form-list label {
+  display: block;
+  font-size: 14px;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.checkout-form-list input,
+.checkout-form-list select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--surface-alt);
+}
+
+.checkout-form-list input::placeholder,
+.checkout-form-list textarea::placeholder {
+  color: rgba(245, 247, 255, 0.6);
+}
+
+.checkout-form-list input:focus,
+.checkout-form-list select:focus {
+  outline: none;
+  border-color: var(--accent-2);
+  box-shadow: 0 0 0 2px rgba(250, 66, 153, 0.2);
+}
+
+.required {
+  color: var(--danger);
+}
+
+.field-error {
+  display: block;
+  color: var(--danger);
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+.address-label {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.shipping-summary {
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  margin-bottom: 16px;
+  color: var(--muted);
+}
+
+.shipping-summary div {
+  margin-bottom: 6px;
+}
+
+.shipping-price {
+  color: var(--accent-2);
+  font-weight: 600;
+}
+
+.order-button-payment input {
+  width: 100%;
+  background: var(--accent-gradient);
+  color: #fff;
+  border: none;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.your-order {
+  background: var(--surface);
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 24px rgba(4, 6, 12, 0.45);
+}
+
+.your-order h3 {
+  margin-bottom: 16px;
+  color: var(--text);
+  font-size: 20px;
+}
+
+.your-order-table table {
+  width: 100%;
+}
+
+.your-order-table th,
+.your-order-table td {
+  padding: 12px 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.order-item-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.order-item-image {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  background: var(--bg-accent);
+}
+
+.product-quantity {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.amount {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.amount.discount {
+  color: var(--success);
+}
+
+.amount.total {
+  color: var(--accent-2);
+  font-size: 18px;
+}
+
+.payment-method {
+  margin-top: 20px;
+}
+
+.payment-method h4 {
+  margin-bottom: 12px;
   font-size: 16px;
 }
 
-.wrapper {
-  background: url("../assets/photo3.jpg") no-repeat center center fixed;
-  background-size: cover;
-  width: 100%;
-  height: 100vh;
-  padding: 20px;
+.payment-accordion .card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 12px;
+  cursor: pointer;
 }
 
-.containers {
-  max-width: 600px;
-  margin: 0 auto;
-  background-color: rgb(255, 255, 255);
-  padding: 40px;
-  border-radius: 5px;
-  backdrop-filter: blur(20px);
-}
-.spaceto{
-  padding-top: 100px;
-}
-.title {
-  color: #2a3d4f;
-  font-size: 2.5rem;
-  text-align: center;
-  text-transform: uppercase;
-  font-weight: 700;
-  margin-bottom: 30px;
+.payment-accordion .card.active {
+  border-color: var(--accent-3);
+  background: rgba(49, 180, 255, 0.12);
 }
 
-.input-form {
-  margin-bottom: 30px;
+.payment-accordion .card.momo.active {
+  border-color: var(--accent-2);
+  background: rgba(250, 66, 153, 0.12);
 }
 
-.input-form .label {
-  display: block;
-  font-size: 1.1rem;
-  color: #2a3d4f;
-  text-transform: capitalize;
-  margin-bottom: 10px;
-}
-
-.input-form .items {
-  margin-bottom: 20px;
-}
-
-.section-1 .items .input,
-.section-2 .items .input,
-.section-3 .items .input {
+.card-header {
   background: transparent;
   border: none;
-  border-bottom: 2px solid #2a3d4f;
-  width: 100%;
-  padding: 10px;
-  font-size: 1.1rem;
-  color: #1f1e1e;
-  transition: all 0.3s ease;
+  padding: 12px 16px;
 }
 
-.section-1 .items .input:focus,
-.section-2 .items .input:focus,
-.section-3 .items .input:focus {
-  border-color: #fff;
-}
-
-.input-form .section-3 {
+.payment-label {
   display: flex;
-  justify-content: space-between;
-}
-
-.input-form .section-3 .items {
-  width: 48%;
-}
-
-.bat {
-  background: #2a3d4f;
-  color: #fff;
-  font-size: 1.2rem;
-  padding: 12px 20px;
-  text-align: center;
-  text-transform: uppercase;
-  border-radius: 5px;
-  cursor: pointer;
-  font-weight: 700;
-  letter-spacing: 2px;
-  transition: all 0.3s ease;
-}
-
-.bat:hover {
-  background: #fff;
-  color: #2a3d4f;
-}
-
-.cvc{
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  position: relative;
+  gap: 10px;
+  font-size: 14px;
+  margin: 0;
+  cursor: pointer;
 }
 
-.cvc .tooltip {
-  color: #fff;
-  border-radius: 50%;
-  width: 30px;
-  height: 30px;
+.payment-label input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent-3);
+}
+
+.payment-icon {
+  font-size: 20px;
+}
+
+.momo-logo {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+}
+
+.card-body {
+  padding: 18px;
+  border-top: 1px solid var(--border);
   text-align: center;
-  cursor: pointer;
-  background-color: #2a3d4f;
+}
+
+.momo-body p {
+  color: var(--muted);
+  margin-top: 8px;
+}
+
+.fix_order {
+  padding: 80px 16px;
+  text-align: center;
+}
+
+.modal_success {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 10, 18, 0.6);
   display: flex;
+  align-items: center;
   justify-content: center;
+  z-index: 10000;
+}
+
+.group_model_success {
+  background: var(--accent-2);
+  border-radius: 16px;
+  padding: 16px 24px;
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.2);
+}
+
+.fix_icon_bell {
+  display: inline-flex;
   align-items: center;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-  transition: all 0.3s ease;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
 }
 
-.cvc .tooltip:before {
-  content: "?";
-  font-size: 1.2rem;
-  font-weight: 700;
-}
-
-.cvc .cvc-img {
-  position: absolute;
-  top: -120%;
-  right: -20px;
-  background: #2a3d4f;
-  padding: 12px;
-  border-radius: 5px;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-  transform: scale(0);
-  opacity: 0;
-  transition: all 0.3s ease;
-}
-
-.cvc:hover .cvc-img {
-  transform: scale(1);
-  opacity: 1;
-  top: -150%;
-}
-
-@media screen and (max-width: 768px) {
-  .container {
-    max-width: 90%;
-  }
-  
-  .title {
-    font-size: 2rem;
-    margin-bottom: 20px;
-  }
-  
-  .input-form .items {
-    margin-bottom: 15px;
-  }
-  
-  .input-form .section-3 {
-    flex-direction: column;
-  }
-  
-  .input-form .section-3 .items {
-    width: 100%;
-    margin-bottom: 15px;
-  }
-  
-  .btn {
-    font-size: 1.1rem;
-    padding: 10px 16px;
+@media (max-width: 992px) {
+  .checkbox-form,
+  .your-order {
+    padding: 18px;
   }
 }

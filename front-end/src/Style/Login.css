@@ -21,7 +21,7 @@
   left: 0;
   height: 90%;
   width: 100%;
-  background: rgba(0, 0, 0, 0.7);
+  background: var(--overlay);
 }
 
 .fieldHeader {
@@ -39,8 +39,8 @@
   padding: 60px 32px;
   width: 420px;
   transform: translate(-50%, -50%);
-  background: rgba(255, 255, 255, 0.04);
-  box-shadow: -1px 4px 28px 0px rgba(0, 0, 0, 0.75);
+  background: var(--surface-glass);
+  box-shadow: -1px 4px 28px 0px rgba(4, 6, 12, 0.7);
 }
 
 .content header {
@@ -102,7 +102,7 @@
 }
 
 .field input[type="submit"] {
-  background: -webkit-linear-gradient(left, #a445b2, #fa4299);
+  background: var(--accent-gradient);
   border: 0px;
   color: white;
   font-size: 18px;
@@ -113,7 +113,7 @@
 }
 
 .field input[type="submit"]:hover {
-  background: -webkit-linear-gradient(right, #a445b2, #fa4299);
+  background: linear-gradient(135deg, var(--accent-2), var(--accent));
 }
 
 .login {
@@ -129,11 +129,11 @@
 }
 
 .signup a {
-  color: #a445b2;
+  color: var(--accent);
   text-decoration: none;
 }
 
 .signup a:hover {
-  color: #fa4299;
+  color: var(--accent-2);
   text-decoration: underline;
 }

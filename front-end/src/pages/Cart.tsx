@@ -1,7 +1,6 @@
 import { Fragment, useEffect, useState } from "react";
 
 import "../Style/Cart.css";
-import NavBar from "../component/NavBar";
 import { API_BASE_URLS } from "../config/api";
 import { formatVnd } from "../utils/currency";
 function Cart() {
@@ -56,21 +55,22 @@ function Cart() {
           <div className="cart-page">
             <div className="cart-page-container">
               <div className="cart-page-header">
-                <h2 className="cart-header-text">Your Games Cart</h2>
+                <h2 className="cart-header-text">Giỏ hàng của bạn</h2>
               </div>
               <div className="cart-page-table">
                 <table className="cart-table-product">
                   <thead>
                     <tr className="cart-table-header">
-                      <th className="cart-table-img">Product Image</th>
+                      <th className="cart-table-img">Hình ảnh</th>
                       <th className="cart-table-desktop cart-table-payment">
-                        Name
+                        Tên sản phẩm
                       </th>
                       <th className="cart-table-desktop cart-table-size">
-                        Category
+                        Danh mục
                       </th>
+                      <th className="cart-table-qty">Số lượng</th>
                       <th className="cart-table-size right-text-mobile">
-                        Price
+                        Giá
                       </th>
                     </tr>
                   </thead>
@@ -79,10 +79,11 @@ function Cart() {
                   {cartData.Products.map((product: any) => (
                     <tr className="cart-table-content" key={product._id}>
                       <td className="cart-table-image-info">
-                        <img src={product.image} alt="Product Image"/>
+                        <img src={product.image} alt="Hình ảnh sản phẩm"/>
                       </td>
                       <td className="bold-text">{product.name}</td>
                       <td>{product.category}</td>
+                      <td className="cart-table-qty">{product.count ?? 1}</td>
                       <td>{formatVnd(product.price)}</td>
                     </tr>
                   ))}
@@ -94,9 +95,9 @@ function Cart() {
                 <div className="bill-total bold-text">{formatVnd(cartData.total)}</div>
               </div>
               <div className="cart-header-footer">
-                <a href="/Checkout">
+                <a href="/checkout">
                   <button className="cart-header-cta red-bg" type="button">
-                    Proceed to Checkout
+                    Tiến hành thanh toán
                   </button>
                 </a>
               </div>

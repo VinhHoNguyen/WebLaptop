@@ -29,4 +29,14 @@ services:
     environment:
       PORT: 3002
     command: node server.js
+
+  payment:
+    image: payment
+    ports:
+      - "3004:3004"
+    env_file:
+      - .env
+    environment:
+      PORT: 3004
+    command: node server.js
     

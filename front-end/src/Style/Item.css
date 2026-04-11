@@ -12,19 +12,19 @@ html, body {
 h4{
   margin-top: 0px;
   margin-bottom: 0px;
-  color: #fff;
+  color: var(--text);
   font-weight: 700;
   }
 .page-content {
  margin-top: 10px;
- background-color: #27292a;
+ background-color: var(--surface);
  padding: 60px;
   }
 
   .main-profile .main-info span {
     font-size: 14px;
     color: #fff;
-    background-color: #e75e8d;
+    background: var(--accent-gradient);
     padding: 8px 20px;
     display: inline-block;
     border-radius: 25px;

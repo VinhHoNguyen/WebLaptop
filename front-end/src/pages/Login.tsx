@@ -1,7 +1,7 @@
 import { Fragment, useState } from "react";
 import "../Style/Login.css";
-import Alert from "../component/Alert";
 import { API_BASE_URLS } from "../config/api";
+import { decodeJwt } from "../utils/auth";
 function Login() {
 
 
@@ -21,15 +21,20 @@ function Login() {
   
       if (response.ok) {
         console.log("Login successful");
-        // window.location.href = "/";
-        response.json().then((data) => {
-          window.location.href = "/";
-          console.log(data);
-          localStorage.setItem("token", data);
-          localStorage.setItem("user", JSON.stringify(data.user));
-        });
+        const token = await response.json();
+        localStorage.setItem("token", token);
+
+        const payload = decodeJwt(token);
+        if (payload?.user) {
+          localStorage.setItem("user", JSON.stringify(payload.user));
+          if (payload.user.id) {
+            sessionStorage.setItem("id_user", payload.user.id);
+          }
+        }
+
+        window.location.href = "/";
       } else {
-        alert("password or email not correct");
+        alert("Sai email hoặc mật khẩu");
         window.location.href = "/login";
         console.log("Login failed");
       }
@@ -43,7 +48,7 @@ function Login() {
     <Fragment>
       <div className="bg-img">
         <div className="content">
-          <header>Login Form</header>
+          <header>Đăng nhập</header>
           <form onSubmit={handleSubmit}>
             <h4 className="fieldHeader">Email</h4>
             <div className="field">
@@ -51,29 +56,29 @@ function Login() {
               <input
                 type="text"
                 required
-                placeholder="Email or Username"
+                placeholder="Email hoặc tên đăng nhập"
                 onChange={(event) => setEmail(event.target.value)}
               ></input>
             </div>
-            <h4 className="fieldHeader space">Password</h4>
+            <h4 className="fieldHeader space">Mật khẩu</h4>
             <div className="field space">
               <span className="password"></span>
               <input
                 type="password"
                 className="pass-key"
                 required
-                placeholder="Password"
+                placeholder="Mật khẩu"
                 onChange={(event) => setPassword(event.target.value)}
               ></input>
-              <span className="show">SHOW</span>
+              <span className="show">HIỆN</span>
             </div>
             <div className="field space">
-              <input type="submit" value="LOGIN" />
+              <input type="submit" value="ĐĂNG NHẬP" />
             </div>
           </form>
           <div className="signup space">
-            Don't have account?
-            <a href="/register">Signup Now</a>
+            Chưa có tài khoản?
+            <a href="/register">Đăng ký ngay</a>
           </div>
         </div>
       </div>

@@ -2,10 +2,10 @@
   min-height: 100vh;
   padding: 120px 24px 48px;
   background:
-    radial-gradient(circle at 8% 4%, rgba(0, 183, 255, 0.2), transparent 28%),
-    radial-gradient(circle at 92% 2%, rgba(255, 106, 0, 0.18), transparent 26%),
-    linear-gradient(155deg, #0f1118 0%, #121826 40%, #0f121a 100%);
-  color: #edf2ff;
+    radial-gradient(circle at 8% 4%, rgba(164, 69, 178, 0.25), transparent 30%),
+    radial-gradient(circle at 92% 2%, rgba(250, 66, 153, 0.22), transparent 28%),
+    linear-gradient(155deg, #0b0f18 0%, #121626 45%, #0b0f18 100%);
+  color: var(--text);
   font-family: "Karla", "Segoe UI", sans-serif;
 }
 
@@ -18,7 +18,7 @@
 }
 
 .admin-eyebrow {
-  color: #88d4ff;
+  color: var(--accent-2);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   margin-bottom: 4px;
@@ -31,7 +31,7 @@
 
 .admin-sub {
   margin-top: 8px;
-  color: #b7bfd9;
+  color: var(--muted);
   max-width: 620px;
 }
 
@@ -44,14 +44,14 @@
 
 .admin-kpi-quick div {
   background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 12px;
 }
 
 .admin-kpi-quick span {
   display: block;
-  color: #9fa8c5;
+  color: var(--muted);
   font-size: 0.85rem;
 }
 
@@ -71,13 +71,13 @@
   border-radius: 999px;
   padding: 10px 16px;
   background: rgba(255, 255, 255, 0.08);
-  color: #dce2f8;
+  color: var(--text);
   font-weight: 600;
 }
 
 .admin-tabs button.active {
-  background: linear-gradient(120deg, #31b4ff, #ff7a1a);
-  color: #121520;
+  background: var(--accent-gradient);
+  color: #fff;
 }
 
 .admin-content-grid {
@@ -93,7 +93,7 @@
 
 .panel {
   background: rgba(7, 10, 18, 0.75);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--border);
   border-radius: 14px;
   padding: 16px;
 }
@@ -123,7 +123,7 @@
 }
 
 .panel-title-row span {
-  color: #9fa8c5;
+  color: var(--muted);
   font-size: 0.85rem;
 }
 
@@ -151,7 +151,7 @@
 .bar {
   width: 100%;
   border-radius: 8px;
-  background: linear-gradient(180deg, #31b4ff, #ff7a1a);
+  background: var(--accent-gradient);
   animation: rise 0.6s ease;
 }
 
@@ -181,7 +181,7 @@
 
 .admin-list li span {
   display: block;
-  color: #9fa8c5;
+  color: var(--muted);
   font-size: 0.85rem;
 }
 
@@ -200,7 +200,7 @@
   display: grid;
   gap: 6px;
   font-size: 0.92rem;
-  color: #dce2f8;
+  color: var(--text);
 }
 
 .admin-form input,
@@ -209,10 +209,10 @@
 .filters-row select,
 .permission-list select {
   width: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--border);
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.06);
-  color: #f8fbff;
+  color: var(--text);
   padding: 9px 10px;
 }
 
@@ -236,13 +236,13 @@
 
 .form-actions button,
 .btn-inline {
-  background: linear-gradient(120deg, #31b4ff, #ff7a1a);
-  color: #101521;
+  background: var(--accent-gradient);
+  color: #fff;
 }
 
 .btn-ghost {
   background: rgba(255, 255, 255, 0.08) !important;
-  color: #dce2f8 !important;
+  color: var(--text) !important;
 }
 
 .btn-danger {
@@ -269,7 +269,7 @@
 
 .admin-table th,
 .admin-table td {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border);
   padding: 10px;
   text-align: left;
   vertical-align: top;
@@ -291,7 +291,7 @@
 
 .cell-product p {
   margin: 4px 0 0;
-  color: #9fa8c5;
+  color: var(--muted);
   font-size: 0.82rem;
 }
 
@@ -303,18 +303,18 @@
 }
 
 .badge.ok {
-  background: rgba(44, 199, 130, 0.2);
-  color: #8dffcc;
+  background: rgba(45, 212, 191, 0.2);
+  color: #9ff2e1;
 }
 
 .badge.warn {
-  background: rgba(255, 132, 88, 0.2);
-  color: #ffbe9f;
+  background: rgba(255, 152, 104, 0.2);
+  color: #ffd0b3;
 }
 
 .badge.pending {
-  background: rgba(255, 215, 93, 0.2);
-  color: #ffe8a3;
+  background: rgba(255, 216, 126, 0.2);
+  color: #ffe2b8;
 }
 
 .key-manager {
@@ -372,13 +372,13 @@
 }
 
 .permission-list .on {
-  background: rgba(49, 180, 255, 0.2);
-  color: #9eddff;
+  background: rgba(164, 69, 178, 0.22);
+  color: #f4b3ff;
 }
 
 .permission-list .off {
   background: rgba(255, 255, 255, 0.08);
-  color: #9fa8c5;
+  color: var(--muted);
 }
 
 @media (max-width: 992px) {

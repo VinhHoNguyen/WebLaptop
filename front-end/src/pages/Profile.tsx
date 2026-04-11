@@ -1,6 +1,5 @@
 import "../Style/profile.css";
 import "bootstrap/dist/css/bootstrap.min.css";
-import NavBar from "../component/NavBar";
 import data from "../data.json";
 import clip1 from "../assets/clip-01.jpg";
 import clip2 from "../assets/clip-02.jpg";
@@ -55,7 +54,6 @@ function Profile() {
   // }
   return (
     <Fragment>
-      <NavBar />
       <div className="widt">
         <div className="row">
           <div className="col-lg-12">
@@ -66,15 +64,17 @@ function Profile() {
                     <div className="row">
                       <div className="col-lg-4">
                         {/* Render user profile image here */}
-                        <img src={user.gender === "female" ? profileg : profile} alt="Profile Image" />
+                        <img src={user.gender === "female" ? profileg : profile} alt="Ảnh hồ sơ" />
                       </div>
                       <div className="col-lg-4 align-self-center">
                         <div className="main-info header-text">
                           <h1 id="firstname">{user.firstName}</h1>
                           <h5 id="lastname">{user.lastName}</h5>
-                          <p>"I'm {user.firstName}, a passionate gamer who loves exploring new worlds and conquering challenges. Let's conquer the gaming world together!"</p>
+                          <p>
+                            {`Mình là ${user.firstName ?? "bạn"}, yêu công nghệ và thích khám phá những chiếc laptop mới. Cùng tìm chiếc máy phù hợp nhé!`}
+                          </p>
                           <div className="main-border-button">
-                            <a href="#">Update</a>
+                            <a href="#">Cập nhật</a>
                           </div>
                         </div>
                       </div>
@@ -84,13 +84,13 @@ function Profile() {
                             Email <span>{user.email}</span>
                           </li>
                           <li>
-                            Age <span>{user.age}</span>
+                            Tuổi <span>{user.age}</span>
                           </li>
                           <li>
-                            Phone Number <span>{user.phone}</span>
+                            Số điện thoại <span>{user.phone}</span>
                           </li>
                           <li>
-                            Clips <span>29</span>
+                            Bộ sưu tập <span>29</span>
                           </li>
                         </ul>
                       </div>

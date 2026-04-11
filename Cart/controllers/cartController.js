@@ -1,33 +1,50 @@
-const { json } = require('express');
 const CartModel = require('../models/cartModel');
 const ProductModel = require('../models/productModel');
+
+const normalizeCount = (value) => {
+    const count = Number(value);
+    if (!Number.isFinite(count) || count < 1) {
+        return 1;
+    }
+    return Math.floor(count);
+};
 
 const getCartProducts = async (req, res) => {
     const cartProducts = await CartModel.find({ UserId: req.user.id });
     const cartProductIds = [];
+    const quantityById = new Map();
     let total = 0;
+
     cartProducts.forEach(cartProduct => {
+        const productId = String(cartProduct.ProductId);
+        const quantity = normalizeCount(cartProduct.quantity);
         cartProductIds.push(cartProduct.ProductId);
+        quantityById.set(productId, (quantityById.get(productId) || 0) + quantity);
     });
 
-
-    // console.log(cartProductIds);
-    const Products =  await ProductModel.find({ _id: { $in: cartProductIds } });
-    Products.forEach(product => {
-        total += product.price;
+    const Products = await ProductModel.find({ _id: { $in: cartProductIds } });
+    const enrichedProducts = Products.map(product => {
+        const productId = String(product._id);
+        const count = quantityById.get(productId) || 1;
+        total += Number(product.price || 0) * count;
+        return { ...product.toObject(), count };
     });
-    // console.log(Products);
 
-    // const productDetails = productArray.push(await ProductModel.findById(cartProducts[0].ProductId));
-    // res.json(productDetails);
-    res.json({Products, total});
+    res.json({ Products: enrichedProducts, total });
 }
 const addCartProduct = async (req, res) => {
-    const cartProduct = await CartModel.create(
+    const filter = {
+        UserId: req.user.id,
+        ProductId: req.params.productid
+    };
+    const count = normalizeCount(req.body?.count);
+    const cartProduct = await CartModel.findOneAndUpdate(
+        filter,
         {
-            UserId: req.user.id,
-            ProductId: req.params.productid
-        }
+            $setOnInsert: filter,
+            $inc: { quantity: count }
+        },
+        { new: true, upsert: true }
     );
     res.json(cartProduct);
 }

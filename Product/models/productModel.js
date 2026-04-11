@@ -17,6 +17,10 @@ const productSchema =  new mongoose.Schema({
     image: {
         "type": "String"
     },
+    stock: {
+        "type": "Number",
+        min: 0
+    },
     specs: {
         brand: { "type": "String" },
         cpu: { "type": "String" },

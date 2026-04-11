@@ -15,9 +15,11 @@ function NavBar() {
             <div className="col-12">
               <nav className="main-nav">
                 <a href="/" className="logo">
-                  <h4>
-                    <em>Gaming</em> Strore
-                  </h4>
+                  <img
+                    src="/logo-lapsinhvien.png"
+                    alt="Lapsinhvien"
+                    className="logo-image"
+                  />
                 </a>
                 <div className="search-input">
                   {/* <form id="search" onSubmit={handleSearch}>
@@ -33,7 +35,7 @@ function NavBar() {
                 <ul className="nav">
                   <li>
                     <a href="/" className="active">
-                      Home
+                      Trang chủ
                     </a>
                   </li>
 
@@ -41,19 +43,19 @@ function NavBar() {
                     <a href="/checkout">checkout</a>
                   </li> */}
                   <li>
-                    <a href="/cart">Cart</a>
+                    <a href="/cart">Giỏ hàng</a>
                   </li>
                   <li>
-                    <a href="/login">login</a>
+                    <a href="/login">Đăng nhập</a>
                   </li>
                   <li>
                     <a href="/profile">
-                      Profile <img src="src\assets\profile-header.jpg" alt="" />
+                      Hồ sơ <img src="src\assets\profile-header.jpg" alt="Ảnh hồ sơ" />
                     </a>
                   </li>
                 </ul>
                 <a className="menu-trigger">
-                  <span>Menu</span>
+                  <span>Danh mục</span>
                 </a>
               </nav>
             </div>
