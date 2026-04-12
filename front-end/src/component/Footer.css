@@ -125,9 +125,9 @@
 	margin-top: 25px;
 }
 .social-link > li {
-	display: inline-block !important;
+	display: inline-flex !important;
 	transition: all 0.3s ease-in-out;
-	float: left;
+	float: none;
 	margin-right: 12px !important;
 }
 .social-link > li > a {
@@ -223,16 +223,17 @@
 	position: relative;
 }
 .footer-links > ul > li > a {
-	color: #888;
 	color: var(--muted, #a6b0c2);
 	letter-spacing: 0.3px;
 }
-	color: var(--text, #f5f7ff);
+
+.footer-links > ul > li::after {
 	content: "/";
-	color: #888;
+	color: var(--muted, #a6b0c2);
+	margin: 0 8px;
 }
 .footer-links > ul > li > a:hover {
-	color: #242424;
+	color: var(--text, #f5f7ff);
 	text-decoration: underline;
 }
 

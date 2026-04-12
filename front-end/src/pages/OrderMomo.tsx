@@ -55,7 +55,7 @@ function OrderMomo() {
           create_time: `${new Date().getDate()}/${new Date().getMonth() + 1}/${new Date().getFullYear()}`,
         };
 
-        const responseOrder = await OrderAPI.post_order(dataOrder);
+        const responseOrder = (await OrderAPI.post_order(dataOrder)) as { _id?: string };
         const cartKey = getCartKey();
         const cartRaw = localStorage.getItem(cartKey);
         const dataCarts = cartRaw ? (JSON.parse(cartRaw) as LocalCartItem[]) : [];
