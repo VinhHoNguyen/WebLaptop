@@ -14,6 +14,7 @@ import OrderMomo from "./pages/OrderMomo";
 import OrderSuccess from "./pages/OrderSuccess";
 import Admin from "./pages/Admin";
 import NavBar from "./component/NavBar";
+import Footer from "./component/Footer";
 function App() {
   return (
     <Fragment>
@@ -35,6 +36,7 @@ function App() {
           <Route path="/history" element={<OrderHistory />} />
         </Routes>
       </Router>
+      <Footer />
     </Fragment>
   );
 }

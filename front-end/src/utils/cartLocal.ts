@@ -188,7 +188,9 @@ const CartsLocal = {
     }
 
     try {
-      await CartAPI.Update_Cart_Item();
+      if (data.id_product) {
+        await CartAPI.Update_Cart_Item(data.id_product, data.count);
+      }
     } catch (error) {
       console.error("Error updating cart:", error);
     }

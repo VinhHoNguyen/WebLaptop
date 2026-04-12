@@ -69,8 +69,9 @@ const CartAPI = {
     return results;
   },
 
-  Update_Cart_Item: async () => {
-    return Promise.resolve({ ok: true });
+  Update_Cart_Item: (productId: string, count: number) => {
+    const url = `/cart/${productId}`;
+    return cartClient.put(url, { count });
   },
 
   Remove_From_Cart: (productId: string) => {
