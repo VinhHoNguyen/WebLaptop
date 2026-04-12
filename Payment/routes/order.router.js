@@ -18,6 +18,4 @@ router.post('/order', Order.post_order)
 // API tạo thanh toán MoMo (proxy)
 router.post('/momo/create', Order.create_momo_payment)
 
-router.post('/email', Order.send_mail)
-
 module.exports = router

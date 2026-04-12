@@ -7,7 +7,6 @@ import { io } from "socket.io-client";
 import "../Style/CheckOut.css";
 import CouponAPI from "../api/CouponAPI";
 import DetailOrderAPI from "../api/DetailOrderAPI";
-import NoteAPI from "../api/NoteAPI";
 import OrderAPI from "../api/OrderAPI";
 import MoMo from "../component/MoMo";
 import { API_BASE_URLS } from "../config/api";
@@ -15,13 +14,20 @@ import { changeCount } from "../redux/actions/countActions";
 import type { RootState } from "../redux/store";
 import { ensureUserSession } from "../utils/auth";
 import { formatVnd } from "../utils/currency";
-import { getCartKey, type LocalCartItem } from "../utils/cartLocal";
+import CartsLocal, { getCartKey, type LocalCartItem } from "../utils/cartLocal";
 
 type CheckoutForm = {
   fullname: string;
   phone: string;
-  email: string;
-  address: string;
+  province: string;
+  district: string;
+  ward: string;
+  street: string;
+};
+
+type LocationOption = {
+  code: number;
+  name: string;
 };
 
 function CheckOut() {
@@ -33,25 +39,31 @@ function CheckOut() {
   const [loadOrder, setLoadOrder] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "momo" | "">("");
   const [paymentError, setPaymentError] = useState(false);
-  const [searchAddress, setSearchAddress] = useState("");
-  const [errorAddress, setErrorAddress] = useState(false);
-  const [distance, setDistance] = useState("");
-  const [duration, setDuration] = useState("");
-  const [shippingPrice, setShippingPrice] = useState(0);
+  const [shippingPrice, setShippingPrice] = useState(30000);
+  const [provinces, setProvinces] = useState<LocationOption[]>([]);
+  const [districts, setDistricts] = useState<LocationOption[]>([]);
+  const [wards, setWards] = useState<LocationOption[]>([]);
+  const [addressLoading, setAddressLoading] = useState({
+    province: false,
+    district: false,
+    ward: false,
+  });
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<CheckoutForm>({
     defaultValues: {
       fullname: "",
       phone: "",
-      email: "",
-      address: "",
+      province: "",
+      district: "",
+      ward: "",
+      street: "",
     },
   });
-
-  const information = watch();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const countChange = useSelector((state: RootState) => state.Count.isLoad);
+  const provinceValue = watch("province");
+  const districtValue = watch("district");
 
   const socket = useMemo(
     () => io(API_BASE_URLS.socket, { transports: ["websocket"], autoConnect: false }),
@@ -66,12 +78,37 @@ function CheckOut() {
   }, [socket]);
 
   useEffect(() => {
-    ensureUserSession();
+    let isActive = true;
 
-    const storedShipping = Number(localStorage.getItem("price") || 0);
-    if (storedShipping) {
-      setShippingPrice(storedShipping);
-    }
+    const loadProvinces = async () => {
+      setAddressLoading((prev) => ({ ...prev, province: true }));
+      try {
+        const response = await fetch("https://provinces.open-api.vn/api/p/");
+        if (!response.ok) {
+          throw new Error("Unable to fetch provinces");
+        }
+        const data = (await response.json()) as LocationOption[];
+        if (!isActive) return;
+        const sorted = [...data].sort((a, b) => a.name.localeCompare(b.name));
+        setProvinces(sorted);
+      } catch (error) {
+        console.error("Failed to load provinces:", error);
+      } finally {
+        if (isActive) {
+          setAddressLoading((prev) => ({ ...prev, province: false }));
+        }
+      }
+    };
+
+    loadProvinces();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    ensureUserSession();
 
     const cartKey = getCartKey();
     const cached = localStorage.getItem(cartKey);
@@ -145,32 +182,6 @@ function CheckOut() {
     localStorage.setItem("total_price", String(total));
   }, [carts, shippingPrice]);
 
-  const handlerCheckDistance = () => {
-    const mapElement = document.getElementById("to_places") as HTMLInputElement | null;
-    const mapAddressValue = mapElement?.value?.trim() || "";
-    const selectedAddress = mapAddressValue || searchAddress.trim();
-
-    if (!selectedAddress) {
-      setErrorAddress(true);
-      return;
-    }
-
-    const kilo = document.getElementById("in_kilo")?.textContent?.trim() || "";
-    const durationText = document.getElementById("duration_text")?.textContent?.trim() || "";
-    const priceText = document.getElementById("price_shipping")?.textContent?.trim() || "";
-
-    const priceValue = Number(priceText.replace(/[^0-9]/g, "")) || 0;
-
-    setDistance(kilo);
-    setDuration(durationText);
-    setShippingPrice(priceValue);
-    localStorage.setItem("price", String(priceValue));
-
-    setSearchAddress(selectedAddress);
-    setValue("address", selectedAddress, { shouldValidate: true });
-    setErrorAddress(false);
-  };
-
   const handlerCheckout = async (data: CheckoutForm) => {
     if (carts.length === 0) {
       alert("Giỏ hàng đang trống");
@@ -182,16 +193,23 @@ function CheckOut() {
       return;
     }
 
-    if (!data.address) {
-      setErrorAddress(true);
-      alert("Vui lòng nhập địa chỉ và bấm 'Tính phí' để xác nhận!");
+    if (!data.province || !data.district || !data.ward || !data.street?.trim()) {
+      alert("Vui lòng chọn đủ tỉnh/thành, quận/huyện, phường/xã và nhập số nhà.");
       return;
     }
+
+    const provinceName = provinces.find((item) => String(item.code) === data.province)?.name || data.province;
+    const districtName = districts.find((item) => String(item.code) === data.district)?.name || data.district;
+    const wardName = wards.find((item) => String(item.code) === data.ward)?.name || data.ward;
+    const fullAddress = [data.street, wardName, districtName, provinceName]
+      .map((item) => String(item || "").trim())
+      .filter(Boolean)
+      .join(", ");
 
     setPaymentError(false);
 
     if (paymentMethod === "momo") {
-      localStorage.setItem("information", JSON.stringify(data));
+      localStorage.setItem("information", JSON.stringify({ ...data, address: fullAddress }));
       localStorage.setItem("total_price", String(totalPrice));
       localStorage.setItem("price", String(shippingPrice));
 
@@ -208,20 +226,14 @@ function CheckOut() {
         await CouponAPI.updateCoupon(localStorage.getItem("id_coupon") || "");
       }
 
-      const responseDelivery = await NoteAPI.post_note({
-        fullname: data.fullname,
-        phone: data.phone,
-      });
-
       const userId = sessionStorage.getItem("id_user") || "";
       const dataOrder = {
         id_user: userId,
-        address: data.address,
+        address: fullAddress,
         total: totalPrice,
         status: "1",
         pay: false,
         id_payment: "6086709cdc52ab1ae999e882",
-        id_note: responseDelivery?._id,
         feeship: shippingPrice,
         id_coupon: localStorage.getItem("id_coupon") || "",
         create_time: `${new Date().getDate()}/${new Date().getMonth() + 1}/${new Date().getFullYear()}`,
@@ -245,6 +257,8 @@ function CheckOut() {
         await DetailOrderAPI.post_detail_order(dataDetailOrder);
       }
 
+      await CartsLocal.clearCart();
+
       socket.emit("send_order", "Có người vừa đặt hàng");
 
       localStorage.removeItem("information");
@@ -252,8 +266,6 @@ function CheckOut() {
       localStorage.removeItem("price");
       localStorage.removeItem("id_coupon");
       localStorage.removeItem("coupon");
-      localStorage.setItem(cartKey, JSON.stringify([]));
-
       dispatch(changeCount(countChange));
       navigate("/success");
     } catch (error) {
@@ -265,6 +277,86 @@ function CheckOut() {
   };
 
   const totalDisplay = useMemo(() => formatVnd(totalPrice), [totalPrice]);
+
+  useEffect(() => {
+    let isActive = true;
+    setValue("district", "");
+    setValue("ward", "");
+    setDistricts([]);
+    setWards([]);
+
+    if (!provinceValue) {
+      return () => {
+        isActive = false;
+      };
+    }
+
+    const loadDistricts = async () => {
+      setAddressLoading((prev) => ({ ...prev, district: true }));
+      try {
+        const response = await fetch(`https://provinces.open-api.vn/api/p/${provinceValue}?depth=2`);
+        if (!response.ok) {
+          throw new Error("Unable to fetch districts");
+        }
+        const data = (await response.json()) as { districts?: LocationOption[] };
+        if (!isActive) return;
+        const list = data?.districts || [];
+        const sorted = [...list].sort((a, b) => a.name.localeCompare(b.name));
+        setDistricts(sorted);
+      } catch (error) {
+        console.error("Failed to load districts:", error);
+      } finally {
+        if (isActive) {
+          setAddressLoading((prev) => ({ ...prev, district: false }));
+        }
+      }
+    };
+
+    loadDistricts();
+
+    return () => {
+      isActive = false;
+    };
+  }, [provinceValue, setValue]);
+
+  useEffect(() => {
+    let isActive = true;
+    setValue("ward", "");
+    setWards([]);
+
+    if (!districtValue) {
+      return () => {
+        isActive = false;
+      };
+    }
+
+    const loadWards = async () => {
+      setAddressLoading((prev) => ({ ...prev, ward: true }));
+      try {
+        const response = await fetch(`https://provinces.open-api.vn/api/d/${districtValue}?depth=2`);
+        if (!response.ok) {
+          throw new Error("Unable to fetch wards");
+        }
+        const data = (await response.json()) as { wards?: LocationOption[] };
+        if (!isActive) return;
+        const list = data?.wards || [];
+        const sorted = [...list].sort((a, b) => a.name.localeCompare(b.name));
+        setWards(sorted);
+      } catch (error) {
+        console.error("Failed to load wards:", error);
+      } finally {
+        if (isActive) {
+          setAddressLoading((prev) => ({ ...prev, ward: false }));
+        }
+      }
+    };
+
+    loadWards();
+
+    return () => {
+      isActive = false;
+    };
+  }, [districtValue, setValue]);
 
   return (
     <div>
@@ -323,119 +415,86 @@ function CheckOut() {
                   <div className="col-md-12">
                     <div className="checkout-form-list">
                       <label>
-                        Email <span className="required">*</span>
+                        Tỉnh/Thành phố <span className="required">*</span>
                       </label>
-                      <input
-                        placeholder="Nhập email"
-                        type="email"
-                        {...register("email", { required: true })}
-                      />
-                      {errors.email && <span className="field-error">* Vui lòng nhập email</span>}
-                    </div>
-                  </div>
-                  <div className="col-md-12">
-                    <div className="checkout-form-list">
-                      <label>
-                        Gửi từ <span className="required">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        id="from_places"
-                        disabled
-                        value="155 Sư Vạn Hạnh, Phường 13, Quận 10, Hồ Chí Minh"
-                        style={{ backgroundColor: "#f5f5f5" }}
-                      />
-                      <input id="origin" name="origin" type="hidden" value="155 Sư Vạn Hạnh" />
-                    </div>
-                  </div>
-
-                  <div className="col-md-12">
-                    <div className="checkout-form-list">
-                      <label>
-                        Tìm kiếm địa chỉ <span className="required">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        id="to_places"
-                        placeholder="Nhập địa chỉ giao hàng"
-                        value={searchAddress}
-                        onChange={(event) => setSearchAddress(event.target.value)}
-                      />
-                      {errorAddress && (
-                        <span className="field-error">* Vui lòng nhập địa chỉ và bấm 'Tính phí'</span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="col-md-12">
-                    <div className="checkout-form-list">
-                      <button
-                        type="button"
-                        className="btn btn-dark"
-                        style={{ width: "100%", marginBottom: "20px" }}
-                        onClick={handlerCheckDistance}
-                      >
-                        Kiểm tra địa chỉ &amp; Tính phí Ship
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="col-md-12">
-                    <div className="checkout-form-list">
-                      <label className="address-label">Địa chỉ nhận hàng (Chính thức):</label>
-                      <input
-                        type="text"
-                        {...register("address", { required: true })}
-                        value={information.address || ""}
-                        readOnly
-                        style={{
-                          backgroundColor: information.address ? "#e8f5e9" : "#fff",
-                          fontWeight: "bold",
-                          color: "#2d3436",
-                          border: "1px solid #27ae60",
-                        }}
-                        placeholder="Địa chỉ sẽ hiện ở đây sau khi tính phí..."
-                      />
-                      {errors.address && <span className="field-error">* Chưa xác nhận địa chỉ</span>}
-                    </div>
-                  </div>
-
-                  <div className="col-md-12">
-                    <div className="checkout-form-list">
-                      <label>Phương tiện vận chuyển</label>
-                      <select id="travel_mode" name="travel_mode" className="form-control">
-                        <option value="DRIVING">Xe máy / Ô tô</option>
+                      <select {...register("province", { required: true })}>
+                        <option value="">
+                          {addressLoading.province ? "Đang tải tỉnh/thành..." : "Chọn tỉnh/thành phố"}
+                        </option>
+                        {provinces.map((province) => (
+                          <option key={province.code} value={province.code}>
+                            {province.name}
+                          </option>
+                        ))}
                       </select>
+                      {errors.province && <span className="field-error">* Vui lòng chọn tỉnh/thành</span>}
                     </div>
                   </div>
 
-                  {(distance || duration || shippingPrice > 0) && (
-                    <div className="col-md-12">
-                      <div className="shipping-summary">
-                        <div>
-                          <strong>Khoảng cách:</strong> {distance || "Đang cập nhật"}
-                        </div>
-                        <div>
-                          <strong>Thời gian:</strong> {duration || "Đang cập nhật"}
-                        </div>
-                        <div>
-                          <strong>Phí vận chuyển:</strong> <span className="shipping-price">{formatVnd(shippingPrice)}</span>
-                        </div>
+                  <div className="col-md-12">
+                    <div className="checkout-form-list">
+                      <label>
+                        Quận/Huyện <span className="required">*</span>
+                      </label>
+                      <select
+                        {...register("district", { required: true })}
+                        disabled={!provinceValue || addressLoading.district}
+                      >
+                        <option value="">
+                          {addressLoading.district ? "Đang tải quận/huyện..." : "Chọn quận/huyện"}
+                        </option>
+                        {districts.map((district) => (
+                          <option key={district.code} value={district.code}>
+                            {district.name}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.district && <span className="field-error">* Vui lòng chọn quận/huyện</span>}
+                    </div>
+                  </div>
+
+                  <div className="col-md-12">
+                    <div className="checkout-form-list">
+                      <label>
+                        Phường/Xã <span className="required">*</span>
+                      </label>
+                      <select
+                        {...register("ward", { required: true })}
+                        disabled={!districtValue || addressLoading.ward}
+                      >
+                        <option value="">
+                          {addressLoading.ward ? "Đang tải phường/xã..." : "Chọn phường/xã"}
+                        </option>
+                        {wards.map((ward) => (
+                          <option key={ward.code} value={ward.code}>
+                            {ward.name}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.ward && <span className="field-error">* Vui lòng chọn phường/xã</span>}
+                    </div>
+                  </div>
+
+                  <div className="col-md-12">
+                    <div className="checkout-form-list">
+                      <label>
+                        Tên đường, tòa nhà, số nhà <span className="required">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ví dụ: 155 Sư Vạn Hạnh, tòa nhà A"
+                        {...register("street", { required: true })}
+                      />
+                      {errors.street && <span className="field-error">* Vui lòng nhập số nhà</span>}
+                    </div>
+                  </div>
+
+                  <div className="col-md-12">
+                    <div className="shipping-summary">
+                      <div>
+                        <strong>Phí vận chuyển cố định:</strong> <span className="shipping-price">{formatVnd(shippingPrice)}</span>
                       </div>
                     </div>
-                  )}
-
-                  <div id="result" className="hide">
-                    <div>
-                      <label id="in_kilo"></label>
-                    </div>
-                    <div>
-                      <label id="duration_text"></label>
-                    </div>
-                    <div>
-                      <label id="price_shipping"></label>
-                    </div>
-                    <input id="destination" type="hidden" name="destination" />
                   </div>
 
                   <div className="col-md-12">
@@ -586,7 +645,7 @@ function CheckOut() {
                       </div>
                       {paymentMethod === "momo" && (
                         <div className="card-body">
-                          {errors.fullname || errors.phone || errors.email ? (
+                          {errors.fullname || errors.phone || errors.province || errors.district || errors.ward || errors.street ? (
                             <p className="field-error">Vui lòng kiểm tra lại thông tin!</p>
                           ) : (
                             <div className="momo-body">

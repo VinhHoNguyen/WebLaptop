@@ -17,7 +17,6 @@ const port = process.env.PORT || 3004
 
 const OrderAPI = require('./routes/order.router')
 const Detail_OrderAPI = require('./routes/detail_order.router')
-const NoteAPI = require('./routes/note.router')
 
 
 app.use('/', express.static('public'))
@@ -46,7 +45,6 @@ if (paypalClientId && paypalClientSecret) {
 }
 
 app.use('/api/Payment', OrderAPI)
-app.use('/api/Note', NoteAPI)
 app.use('/api/DetailOrder', Detail_OrderAPI)
 
 

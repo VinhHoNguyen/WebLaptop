@@ -8,10 +8,6 @@ var schema = new mongoose.Schema(
         id_payment: {
             type: String,
         },
-        id_note: {
-            type: String,
-            ref: 'Note'
-        },
         address: String,
         total: Number,
         status: String,

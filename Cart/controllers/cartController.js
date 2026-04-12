@@ -49,6 +49,37 @@ const addCartProduct = async (req, res) => {
     res.json(cartProduct);
 }
 
+const updateCartProduct = async (req, res) => {
+    const rawCount = Number(req.body?.count);
+    if (!Number.isFinite(rawCount)) {
+        return res.status(400).json({ message: "count is required" });
+    }
+
+    if (rawCount <= 0) {
+        const removed = await CartModel.findOneAndDelete({
+            UserId: req.user.id,
+            ProductId: req.params.productid
+        });
+        return res.json({ removed: true, cartProduct: removed });
+    }
+
+    const count = Math.floor(rawCount);
+    const cartProduct = await CartModel.findOneAndUpdate(
+        {
+            UserId: req.user.id,
+            ProductId: req.params.productid
+        },
+        { $set: { quantity: count } },
+        { new: true }
+    );
+
+    if (!cartProduct) {
+        return res.status(404).json({ message: "Cart item not found" });
+    }
+
+    return res.json(cartProduct);
+}
+
 const deleteCartProduct = async (req, res) => {
     const cartProduct = await CartModel.findOneAndDelete(
         {
@@ -70,6 +101,7 @@ const checkout = async (req, res) => {
 module.exports = {
     getCartProducts,
     addCartProduct,
+    updateCartProduct,
     deleteCartProduct,
     checkout
 }

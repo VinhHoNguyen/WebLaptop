@@ -5,11 +5,10 @@ import { useNavigate } from "react-router-dom";
 import "../Style/CheckOut.css";
 import CouponAPI from "../api/CouponAPI";
 import DetailOrderAPI from "../api/DetailOrderAPI";
-import NoteAPI from "../api/NoteAPI";
 import OrderAPI from "../api/OrderAPI";
 import { changeCount } from "../redux/actions/countActions";
 import type { RootState } from "../redux/store";
-import { getCartKey, type LocalCartItem } from "../utils/cartLocal";
+import CartsLocal, { getCartKey, type LocalCartItem } from "../utils/cartLocal";
 
 function OrderMomo() {
   const [note, setNote] = useState("");
@@ -43,11 +42,6 @@ function OrderMomo() {
           await CouponAPI.updateCoupon(localStorage.getItem("id_coupon") || "");
         }
 
-        const responseNote = await NoteAPI.post_note({
-          fullname: information.fullname,
-          phone: information.phone,
-        });
-
         const userId = sessionStorage.getItem("id_user") || "";
         const dataOrder = {
           id_user: userId,
@@ -56,7 +50,6 @@ function OrderMomo() {
           status: "1",
           pay: true,
           id_payment: "60c05c3adae4bef7b3d55fbf",
-          id_note: responseNote?._id,
           feeship: price,
           id_coupon: localStorage.getItem("id_coupon") || "",
           create_time: `${new Date().getDate()}/${new Date().getMonth() + 1}/${new Date().getFullYear()}`,
@@ -80,7 +73,7 @@ function OrderMomo() {
           await DetailOrderAPI.post_detail_order(dataDetailOrder);
         }
 
-        localStorage.setItem(cartKey, JSON.stringify([]));
+        await CartsLocal.clearCart();
         localStorage.removeItem("information");
         localStorage.removeItem("total_price");
         localStorage.removeItem("price");
