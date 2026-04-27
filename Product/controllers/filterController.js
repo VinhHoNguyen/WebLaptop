@@ -1,20 +1,28 @@
-const productModel = require('../models/productModel');
+const productController = require('./productController');
 
 const categoryFilter  = async (req, res) =>{
-    // console.log(req.params);
-    const filteredProducts = await productModel.find({category: req.params.category})
-    res.json({filteredProducts})
+    req.query = {
+        ...req.query,
+        category: req.params.category,
+    };
+    return productController.getProducts(req, res);
 }
 
 const priceFilter = async (req, res) =>{  
-    const filteredProducts = await productModel.find({price: {$lte: req.params.price}})
-
-    res.json(filteredProducts)
+    req.query = {
+        ...req.query,
+        price: req.params.price,
+    };
+    return productController.getProducts(req, res);
 }
 
 const  categorypriceFilter = async (req, res) =>{
-    const filteredProducts = await productModel.find({category: req.params.category, price: {$lte: req.params.price}})
-    res.json(filteredProducts)
+    req.query = {
+        ...req.query,
+        category: req.params.category,
+        price: req.params.price,
+    };
+    return productController.getProducts(req, res);
 }
 
 module.exports = {

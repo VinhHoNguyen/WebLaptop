@@ -29,6 +29,12 @@ const productSchema =  new mongoose.Schema({
         storageGb: { "type": "Number" },
         display: { "type": "String" }
     }
+}, {
+    timestamps: true,
 })
+
+productSchema.index({ name: 1 });
+productSchema.index({ category: 1 });
+productSchema.index({ price: 1 });
 
 module.exports = mongoose.model('Product', productSchema);

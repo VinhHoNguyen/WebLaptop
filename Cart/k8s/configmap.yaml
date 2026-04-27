@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cart-config
+  namespace: default
+  labels:
+    app: cart
+data:
+  # Khi chạy trong K8s cluster, sử dụng tên service nội bộ
+  product-service-url: http://product-service:3002

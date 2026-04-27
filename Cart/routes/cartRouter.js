@@ -6,6 +6,8 @@ const router = express.Router();
 
 router.get("/", validateToken, getCartProducts);
 
+router.post("/", validateToken, addCartProduct);
+
 router.post("/:productid", validateToken, addCartProduct);
 
 router.put("/:productid", validateToken, updateCartProduct);

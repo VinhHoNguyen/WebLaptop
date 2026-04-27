@@ -4,7 +4,9 @@ const cartSchema = mongoose.Schema(
 {
     UserId: 
     {
-        type: String 
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true
     },
 
     ProductId: 
@@ -25,5 +27,7 @@ const cartSchema = mongoose.Schema(
 }
 
 );
+
+cartSchema.index({ UserId: 1, ProductId: 1 }, { unique: true });
 
 module.exports = mongoose.model("Cart", cartSchema);

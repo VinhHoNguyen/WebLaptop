@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cart-service
+  namespace: default
+  labels:
+    app: cart
+    version: v1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cart
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: cart
+        version: v1
+    spec:
+      containers:
+      - name: cart
+        image: cart-service:latest
+        imagePullPolicy: Always
+        ports:
+        - name: http
+          containerPort: 3003
+          protocol: TCP
+        env:
+        - name: PORT
+          value: "3003"
+        - name: MONGO_URI
+          valueFrom:
+            secretKeyRef:
+              name: cart-secrets
+              key: mongo-uri
+        - name: PRODUCT_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: cart-config
+              key: product-service-url
+        - name: ACCESS_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: cart-secrets
+              key: access-token
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /cart
+            port: 3003
+            scheme: HTTP
+          initialDelaySeconds: 15
+          periodSeconds: 20
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /cart
+            port: 3003
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1001
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      securityContext:
+        fsGroup: 1001
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
