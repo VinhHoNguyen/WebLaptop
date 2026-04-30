@@ -12,9 +12,9 @@ services:
       - "${MYSQL_PORT:-3306}:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./Checkout/sql/schema.sql:/docker-entrypoint-initdb.d/01-checkout-schema.sql:ro
-      - ./User/sql/schema.sql:/docker-entrypoint-initdb.d/02-identity-schema.sql:ro
-      - ./Product/sql/schema.sql:/docker-entrypoint-initdb.d/03-product-schema.sql:ro
+      - ./services/checkout/sql/schema.sql:/docker-entrypoint-initdb.d/01-checkout-schema.sql:ro
+      - ./services/identity/sql/schema.sql:/docker-entrypoint-initdb.d/02-identity-schema.sql:ro
+      - ./services/catalog/sql/schema.sql:/docker-entrypoint-initdb.d/03-product-schema.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -u$$MYSQL_USER -p$$MYSQL_PASSWORD || exit 1"]
       interval: 10s
@@ -23,7 +23,7 @@ services:
 
   identity:
     build:
-      context: ./User
+      context: ./services/identity
       dockerfile: Dockerfile
     container_name: webgame-identity
     restart: unless-stopped
@@ -45,7 +45,7 @@ services:
 
   catalog:
     build:
-      context: ./Product
+      context: ./services/catalog
       dockerfile: Dockerfile
     container_name: webgame-catalog
     restart: unless-stopped
@@ -66,7 +66,7 @@ services:
 
   checkout:
     build:
-      context: ./Checkout
+      context: ./services/checkout
       dockerfile: Dockerfile
     container_name: webgame-checkout
     restart: unless-stopped
@@ -88,6 +88,7 @@ services:
       MOMO_ACCESS_KEY: ${MOMO_ACCESS_KEY}
       MOMO_SECRET_KEY: ${MOMO_SECRET_KEY}
       MOMO_PARTNER_CODE: ${MOMO_PARTNER_CODE:-MOMO}
+      MOMO_HOSTNAME: ${MOMO_HOSTNAME:-test-payment.momo.vn}
       MOMO_REDIRECT_URL: ${MOMO_REDIRECT_URL:-http://localhost:5173/momo}
       MOMO_IPN_URL: ${MOMO_IPN_URL:-https://webhook.site/replace-with-your-ipn}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
