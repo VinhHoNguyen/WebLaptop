@@ -49,6 +49,29 @@ If you need the production images on a server, use:
 ```bash
 npm run docker:prod:up
 ```
+
+## V2 topology (Identity + Catalog + Checkout)
+
+The repository now includes a migration-friendly v2 setup where Checkout replaces Cart + Payment and stores data in MySQL.
+
+Use this to run v2 locally:
+
+```bash
+npm run docker:v2:up
+```
+
+Useful commands:
+
+```bash
+npm run docker:v2:logs
+npm run docker:v2:down
+```
+
+Notes:
+- In v2, cart endpoints are served by Checkout service.
+- Front-end can point cart/payment/socket to the same checkout base URL via `VITE_CHECKOUT_API_URL`.
+- k3d manifests for this migration are in `k8s-v2/`.
+
 ## CI/CD
 
 This repository now includes a GitHub Actions pipeline in [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml).

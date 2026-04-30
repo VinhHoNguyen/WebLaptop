@@ -4,9 +4,14 @@
   "version": "1.0.0",
   "scripts": {
     "dev:all": "concurrently -n user,product,cart,payment,frontend -c green,blue,magenta,cyan,yellow \"npm --prefix User run dev\" \"npm --prefix Product run dev\" \"npm --prefix Cart run dev\" \"npm --prefix Payment run dev\" \"npm --prefix front-end run dev\"",
+    "dev:v2": "concurrently -n identity,catalog,checkout,frontend -c green,blue,magenta,yellow \"npm --prefix User run dev\" \"npm --prefix Product run dev\" \"npm --prefix Checkout run dev\" \"npm --prefix front-end run dev\"",
+    "dev:checkout": "concurrently -n product,checkout,frontend -c blue,magenta,yellow \"npm --prefix Product run dev\" \"npm --prefix Checkout run dev\" \"npm --prefix front-end run dev\"",
     "docker:up": "docker compose up -d --build",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",
+    "docker:v2:up": "docker compose -f docker-compose.v2.yml up -d --build",
+    "docker:v2:down": "docker compose -f docker-compose.v2.yml down",
+    "docker:v2:logs": "docker compose -f docker-compose.v2.yml logs -f",
     "docker:prod:up": "docker compose -f docker-compose.prod.yml up -d",
     "docker:prod:down": "docker compose -f docker-compose.prod.yml down"
   },
