@@ -32,12 +32,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-          cache-dependency-path: ${{ matrix.path }}/package-lock.json
 
       - name: Install dependencies
         working-directory: ${{ matrix.path }}
-        run: npm ci
+        run: npm install
 
       - name: Syntax check JavaScript files
         working-directory: ${{ matrix.path }}
