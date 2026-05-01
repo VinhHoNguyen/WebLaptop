@@ -1,57 +1,105 @@
-version: "3.8"
-
 services:
-  user:
+  mysql:
+    image: mysql:8.4
+    container_name: webgame-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
+      MYSQL_DATABASE: ${CHECKOUT_MYSQL_DATABASE:-checkout_db}
+      MYSQL_USER: ${CHECKOUT_MYSQL_USER:-checkout_svc}
+      MYSQL_PASSWORD: ${CHECKOUT_MYSQL_PASSWORD:-checkout_password}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./services/checkout/sql/schema.sql:/docker-entrypoint-initdb.d/01-checkout-schema.sql:ro
+      - ./services/identity/sql/schema.sql:/docker-entrypoint-initdb.d/02-identity-schema.sql:ro
+      - ./services/catalog/sql/schema.sql:/docker-entrypoint-initdb.d/03-product-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u$$MYSQL_USER -p$$MYSQL_PASSWORD || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  identity:
     build:
-      context: ./User
+      context: ./services/identity
       dockerfile: Dockerfile
-    container_name: webgame-user
+    container_name: webgame-identity
     restart: unless-stopped
     ports:
       - "${USER_PORT:-3001}:3001"
-    env_file:
-      - .env
     environment:
+      SERVICE_NAME: identity-service
       PORT: 3001
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173,http://localhost:5174}
+      ACCESS_TOKEN: ${ACCESS_TOKEN}
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USER: root
+      MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
+      MYSQL_DATABASE: identity_db
+    depends_on:
+      mysql:
+        condition: service_healthy
 
-  product:
+  catalog:
     build:
-      context: ./Product
+      context: ./services/catalog
       dockerfile: Dockerfile
-    container_name: webgame-product
+    container_name: webgame-catalog
     restart: unless-stopped
     ports:
       - "${PRODUCT_PORT:-3002}:3002"
-    env_file:
-      - .env
+    volumes:
+      - ./products.json:/app/products.json:ro
     environment:
-      PORT: 3002
+      SERVICE_NAME: catalog-service
+      PRODUCT_PORT: 3002
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173,http://localhost:5174}
+      PRODUCTS_JSON_PATH: /app/products.json
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USER: root
+      MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
+      MYSQL_DATABASE: product_db
+    depends_on:
+      mysql:
+        condition: service_healthy
 
-  cart:
+  checkout:
     build:
-      context: ./Cart
+      context: ./services/checkout
       dockerfile: Dockerfile
-    container_name: webgame-cart
+    container_name: webgame-checkout
     restart: unless-stopped
     ports:
-      - "${CART_PORT:-3003}:3003"
-    env_file:
-      - .env
+      - "${CHECKOUT_PORT:-3004}:3004"
     environment:
-      PORT: 3003
-
-  payment:
-    build:
-      context: ./Payment
-      dockerfile: Dockerfile
-    container_name: webgame-payment
-    restart: unless-stopped
-    ports:
-      - "${PAYMENT_PORT:-3004}:3004"
-    env_file:
-      - .env
-    environment:
-      PORT: 3004
+      SERVICE_NAME: checkout-service
+      CHECKOUT_PORT: 3004
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173,http://localhost:5174}
+      ACCESS_TOKEN: ${ACCESS_TOKEN}
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USER: ${CHECKOUT_MYSQL_USER:-checkout_svc}
+      MYSQL_PASSWORD: ${CHECKOUT_MYSQL_PASSWORD:-checkout_password}
+      MYSQL_DATABASE: ${CHECKOUT_MYSQL_DATABASE:-checkout_db}
+      PRODUCT_SERVICE_URL: http://catalog:3002
+      REQUEST_TIMEOUT_MS: 5000
+      PRODUCT_RETRY_COUNT: 2
+      MOMO_ACCESS_KEY: ${MOMO_ACCESS_KEY}
+      MOMO_SECRET_KEY: ${MOMO_SECRET_KEY}
+      MOMO_PARTNER_CODE: ${MOMO_PARTNER_CODE:-MOMO}
+      MOMO_HOSTNAME: ${MOMO_HOSTNAME:-test-payment.momo.vn}
+      MOMO_REDIRECT_URL: ${MOMO_REDIRECT_URL:-http://localhost:5173/momo}
+      MOMO_IPN_URL: ${MOMO_IPN_URL:-https://webhook.site/replace-with-your-ipn}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      catalog:
+        condition: service_started
 
   front-end:
     build:
@@ -60,15 +108,18 @@ services:
       args:
         VITE_USER_API_URL: ${VITE_USER_API_URL:-http://localhost:3001}
         VITE_PRODUCT_API_URL: ${VITE_PRODUCT_API_URL:-http://localhost:3002}
-        VITE_CART_API_URL: ${VITE_CART_API_URL:-http://localhost:3003}
+        VITE_CHECKOUT_API_URL: ${VITE_CHECKOUT_API_URL:-http://localhost:3004}
+        VITE_CART_API_URL: ${VITE_CART_API_URL:-http://localhost:3004}
+        VITE_PAYMENT_API_URL: ${VITE_PAYMENT_API_URL:-http://localhost:3004}
+        VITE_SOCKET_URL: ${VITE_SOCKET_URL:-http://localhost:3004}
     container_name: webgame-frontend
     restart: unless-stopped
     ports:
       - "${FRONTEND_PORT:-5173}:80"
     depends_on:
-      - user
-      - product
-      - cart
+      - identity
+      - catalog
+      - checkout
 
   admin-portal:
     build:
@@ -82,5 +133,9 @@ services:
     ports:
       - "${ADMIN_PORT:-5174}:80"
     depends_on:
-      - user
+      - identity
+      - catalog
+
+volumes:
+  mysql_data:
 

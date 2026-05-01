@@ -27,18 +27,6 @@ services:
       ACCESS_TOKEN: ${ACCESS_TOKEN}
       PORT: 3002
 
-  cart:
-    image: ghcr.io/${GHCR_OWNER}/webgame-cart:${IMAGE_TAG:-latest}
-    restart: unless-stopped
-    ports:
-      - "${CART_PORT:-3003}:3003"
-    environment:
-      MONGO_USERNAME: ${MONGO_USERNAME}
-      MONGO_PASSWORD: ${MONGO_PASSWORD}
-      MONGO_CLUSTER: ${MONGO_CLUSTER}
-      MONGO_DBNAME: ${MONGO_DBNAME}
-      ACCESS_TOKEN: ${ACCESS_TOKEN}
-      PORT: 3003
 
   front-end:
     image: ghcr.io/${GHCR_OWNER}/webgame-frontend:${IMAGE_TAG:-latest}

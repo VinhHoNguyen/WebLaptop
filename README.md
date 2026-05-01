@@ -1,7 +1,7 @@
 # E-Commerce Web Application using MERN Stack and Microservices Architecture
 
 ## Description
-This is a web application for an e-commerce store that sells games. It is built using the MERN stack and Microservices Architecture. It has a user interface for the customers to view the products and add them to their cart. The application is built using the Microservices Architecture, where each service is a separate Node.js application.
+This is a web application for an e-commerce store that sells games. It uses a microservices architecture with separate Node.js services for identity, catalog, and checkout. Cart functionality is handled inside Checkout in the v2 stack.
 
 ## Installation
 
@@ -22,18 +22,19 @@ MONGO_DBNAME=####
 ACCESS_TOKEN=####
 VITE_USER_API_URL=http://localhost:3001
 VITE_PRODUCT_API_URL=http://localhost:3002
-VITE_CART_API_URL=http://localhost:3003
+VITE_CHECKOUT_API_URL=http://localhost:3004
+VITE_CART_API_URL=http://localhost:3004
 ```
-2. Start the full stack with one command:
+2. Start the v2 full stack with one command:
 ```bash
-npm run docker:up
+npm run docker:v2:up
 ```
 3. Open the application in your browser:
 - Front-end: http://localhost:5173
 - Admin portal: http://localhost:5174
-- User service: http://localhost:3001
-- Product service: http://localhost:3002
-- Cart service: http://localhost:3003
+- Identity service: http://localhost:3001
+- Catalog service: http://localhost:3002
+- Checkout service: http://localhost:3004
 
 4. To stop the stack:
 ```bash
@@ -52,13 +53,7 @@ npm run docker:prod:up
 
 ## V2 topology (Identity + Catalog + Checkout)
 
-The repository now includes a migration-friendly v2 setup where Checkout replaces Cart + Payment and stores data in MySQL.
-
-Use this to run v2 locally:
-
-```bash
-npm run docker:v2:up
-```
+The repository now uses the v2 stack by default. Checkout serves cart endpoints and stores data in MySQL.
 
 Useful commands:
 
@@ -68,7 +63,7 @@ npm run docker:v2:down
 ```
 
 Notes:
-- In v2, cart endpoints are served by Checkout service.
+- Cart is no longer a standalone service.
 - Front-end can point cart/payment/socket to the same checkout base URL via `VITE_CHECKOUT_API_URL`.
 - k3d manifests for this migration are in `k8s-v2/`.
 
@@ -77,14 +72,14 @@ Notes:
 This repository now includes a GitHub Actions pipeline in [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml).
 
 - On pull requests and pushes, it validates all backend services with `npm ci` and syntax checks, then builds the front-end with Vite.
-- On pushes to `main`, it builds and publishes Docker images for `user`, `product`, `cart`, and `front-end` to GitHub Container Registry.
-- The production compose file is [`docker-compose.prod.yml`](docker-compose.prod.yml). Set `GHCR_OWNER`, MongoDB credentials, and `ACCESS_TOKEN` before running it on a server.
+- On pushes to `main`, it builds and publishes Docker images for `identity`, `catalog`, `checkout`, `front-end`, and `admin-portal` to GitHub Container Registry.
+- The v2 local compose file is [`docker-compose.v2.yml`](docker-compose.v2.yml). Set `ACCESS_TOKEN` and the MoMo variables before running it.
 
 The front-end build reads these optional Vite variables:
 
 - `VITE_USER_API_URL`
 - `VITE_PRODUCT_API_URL`
-- `VITE_CART_API_URL`
+- `VITE_CHECKOUT_API_URL`
 
 If they are not set, the build falls back to the local development ports.
 

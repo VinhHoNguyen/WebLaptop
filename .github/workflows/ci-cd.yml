@@ -18,12 +18,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: user
-            path: User
-          - name: product
-            path: Product
-          - name: cart
-            path: Cart
+          - name: identity
+            path: services/identity
+          - name: catalog
+            path: services/catalog
+          - name: checkout
+            path: services/checkout
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -67,7 +67,8 @@ jobs:
         env:
           VITE_USER_API_URL: ${{ vars.VITE_USER_API_URL || 'http://localhost:3001' }}
           VITE_PRODUCT_API_URL: ${{ vars.VITE_PRODUCT_API_URL || 'http://localhost:3002' }}
-          VITE_CART_API_URL: ${{ vars.VITE_CART_API_URL || 'http://localhost:3003' }}
+          VITE_CHECKOUT_API_URL: ${{ vars.VITE_CHECKOUT_API_URL || 'http://localhost:3004' }}
+          VITE_CART_API_URL: ${{ vars.VITE_CART_API_URL || 'http://localhost:3004' }}
         run: npm run build
 
   validate-admin-portal:
@@ -110,20 +111,20 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: user
-            context: User
+          - name: identity
+            context: services/identity
             dockerfile: Dockerfile
-            image: ghcr.io/${{ github.repository_owner }}/webgame-user
+            image: ghcr.io/${{ github.repository_owner }}/webgame-identity
             buildArgs: ""
-          - name: product
-            context: Product
+          - name: catalog
+            context: services/catalog
             dockerfile: Dockerfile
-            image: ghcr.io/${{ github.repository_owner }}/webgame-product
+            image: ghcr.io/${{ github.repository_owner }}/webgame-catalog
             buildArgs: ""
-          - name: cart
-            context: Cart
+          - name: checkout
+            context: services/checkout
             dockerfile: Dockerfile
-            image: ghcr.io/${{ github.repository_owner }}/webgame-cart
+            image: ghcr.io/${{ github.repository_owner }}/webgame-checkout
             buildArgs: ""
           - name: frontend
             context: front-end
@@ -132,7 +133,8 @@ jobs:
             buildArgs: |
               VITE_USER_API_URL=${{ vars.VITE_USER_API_URL || 'http://localhost:3001' }}
               VITE_PRODUCT_API_URL=${{ vars.VITE_PRODUCT_API_URL || 'http://localhost:3002' }}
-              VITE_CART_API_URL=${{ vars.VITE_CART_API_URL || 'http://localhost:3003' }}
+              VITE_CHECKOUT_API_URL=${{ vars.VITE_CHECKOUT_API_URL || 'http://localhost:3004' }}
+              VITE_CART_API_URL=${{ vars.VITE_CART_API_URL || 'http://localhost:3004' }}
           - name: admin-portal
             context: admin-portal
             dockerfile: Dockerfile.prod
