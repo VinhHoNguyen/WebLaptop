@@ -4,8 +4,8 @@
   "version": "1.0.0",
   "scripts": {
     "dev:all": "concurrently -n user,product,cart,payment,frontend -c green,blue,magenta,cyan,yellow \"npm --prefix User run dev\" \"npm --prefix Product run dev\" \"npm --prefix Cart run dev\" \"npm --prefix Payment run dev\" \"npm --prefix front-end run dev\"",
-    "dev:v2": "concurrently -n identity,catalog,checkout,frontend -c green,blue,magenta,yellow \"npm --prefix User run dev\" \"npm --prefix Product run dev\" \"npm --prefix Checkout run dev\" \"npm --prefix front-end run dev\"",
-    "dev:checkout": "concurrently -n product,checkout,frontend -c blue,magenta,yellow \"npm --prefix Product run dev\" \"npm --prefix Checkout run dev\" \"npm --prefix front-end run dev\"",
+    "dev:v2": "concurrently -n identity,catalog,checkout,frontend -c green,blue,magenta,yellow \"npm --prefix services/identity run dev\" \"npm --prefix services/catalog run dev\" \"npm --prefix services/checkout run dev\" \"npm --prefix front-end run dev\"",
+    "dev:checkout": "concurrently -n catalog,checkout,frontend -c blue,magenta,yellow \"npm --prefix services/catalog run dev\" \"npm --prefix services/checkout run dev\" \"npm --prefix front-end run dev\"",
     "docker:up": "docker compose up -d --build",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",

@@ -1,0 +1,11 @@
+var express = require('express')
+
+var router = express.Router()
+
+const Detail_Order = require('../controllers/detailOrderController')
+
+router.get('/:id', Detail_Order.detail)
+
+router.post('/', Detail_Order.post_detail_order)
+
+module.exports = router
