@@ -17,7 +17,8 @@
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.14.0",
     "node-fetch": "^2.7.0",
-    "socket.io": "^4.8.1"
+    "socket.io": "^4.8.1",
+    "webgame-local-stack": "file:../.."
   },
   "devDependencies": {
     "nodemon": "^3.1.10"

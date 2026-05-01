@@ -4,6 +4,7 @@ import { API_BASE_URLS } from "../config/api";
 import { seedOrders, seedTickets, seedUsers } from "../admin/mockData";
 import type {
   AdminOrder,
+  AdminOrderItem,
   AdminProduct,
   AdminTab,
   AdminUser,
@@ -141,7 +142,7 @@ function Admin() {
 
   const weeklyGrowth = useMemo(() => {
     const labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    const series = labels.map((label, index) => {
+    const series = labels.map((label: string, index: number) => {
       return {
         label,
         value: 250000 + index * 130000 + (index % 2 === 0 ? 110000 : 70000),
@@ -180,13 +181,13 @@ function Admin() {
   }, [orders]);
 
   const recentActivities = useMemo(() => {
-    const fromOrders = orders.slice(0, 5).map((order) => ({
+    const fromOrders = orders.slice(0, 5).map((order: AdminOrder) => ({
       id: order.orderId,
       text: `Order ${order.orderId} - ${order.status}`,
       time: new Date(order.purchasedAt).toLocaleString("vi-VN"),
     }));
 
-    const fromTickets = tickets.slice(0, 3).map((ticket) => ({
+    const fromTickets = tickets.slice(0, 3).map((ticket: SupportTicket) => ({
       id: ticket.id,
       text: `Ticket ${ticket.id} - ${ticket.subject}`,
       time: new Date(ticket.createdAt).toLocaleString("vi-VN"),
@@ -214,9 +215,9 @@ function Admin() {
   const buildKeys = (raw: string): GameKey[] => {
     return raw
       .split(/\r?\n/)
-      .map((key) => key.trim())
+      .map((key: string) => key.trim())
       .filter(Boolean)
-      .map((code) => ({
+      .map((code: string) => ({
         code,
         status: "available" as KeyStatus,
       }));
@@ -238,7 +239,7 @@ function Admin() {
       trailerUrl: formData.trailerUrl.trim(),
       screenshots: formData.screenshots
         .split(",")
-        .map((item) => item.trim())
+        .map((item: string) => item.trim())
         .filter(Boolean),
       minSpec: formData.minSpec,
       recSpec: formData.recSpec,
@@ -297,16 +298,16 @@ function Admin() {
       name: product.name,
       description: product.description,
       category: product.category,
-      platform: product.platform,
-      status: product.status,
+      platform: (product.platform as "PC" | "PS5" | "Xbox") || "PC",
+      status: (product.status as "In Stock" | "Out of Stock") || "In Stock",
       price: String(product.price),
       salePrice: product.salePrice ? String(product.salePrice) : "",
       image: product.image,
       trailerUrl: product.trailerUrl ?? "",
       screenshots: product.screenshots.join(", "),
-      minSpec: product.minSpec,
-      recSpec: product.recSpec,
-      keys: product.keys.map((key) => key.code).join("\n"),
+      minSpec: product.minSpec ?? "",
+      recSpec: product.recSpec ?? "",
+      keys: product.keys.map((key: GameKey) => key.code).join("\n"),
     });
   };
 
@@ -319,7 +320,7 @@ function Admin() {
 
         return {
           ...product,
-          keys: product.keys.map((key) => {
+          keys: product.keys.map((key: GameKey) => {
             if (key.code !== code) {
               return key;
             }
@@ -810,7 +811,7 @@ function Admin() {
 
                   <h4>Game keys da gui</h4>
                   <ul className="admin-list">
-                    {selectedOrder.items.map((item) => (
+                    {selectedOrder.items.map((item: AdminOrderItem) => (
                       <li key={`${selectedOrder.orderId}-${item.keySent}`}>
                         <div>
                           <strong>{item.productName}</strong>

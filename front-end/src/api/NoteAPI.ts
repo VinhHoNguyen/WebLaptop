@@ -1,14 +1,16 @@
 import axiosClient from "./axiosClient";
 
 const NoteAPI = {
-  post_note: (data: Record<string, unknown>) => {
+  post_note: async (data: Record<string, unknown>): Promise<any> => {
     const url = "/api/Note";
-    return axiosClient.post(url, data);
+    const res = await axiosClient.post(url, data);
+    return res as any;
   },
 
-  get_note: (id: string) => {
+  get_note: async (id: string): Promise<any> => {
     const url = `/api/Note/${id}`;
-    return axiosClient.get(url);
+    const res = await axiosClient.get(url);
+    return res as any;
   },
 };
 

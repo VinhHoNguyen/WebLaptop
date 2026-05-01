@@ -1,14 +1,16 @@
 import axiosClient from "./axiosClient";
 
 const DetailOrderAPI = {
-  post_detail_order: (data: Record<string, unknown>) => {
+  post_detail_order: async (data: Record<string, unknown>): Promise<any> => {
     const url = "/api/DetailOrder";
-    return axiosClient.post(url, data);
+    const res = await axiosClient.post(url, data);
+    return res as any;
   },
 
-  get_detail_order: (id: string) => {
+  get_detail_order: async (id: string): Promise<any> => {
     const url = `/api/DetailOrder/${id}`;
-    return axiosClient.get(url);
+    const res = await axiosClient.get(url);
+    return res as any;
   },
 };
 

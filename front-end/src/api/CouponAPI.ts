@@ -1,24 +1,28 @@
 import axiosClient from "./axiosClient";
 
 const CouponAPI = {
-  checkCoupon: (query: string) => {
+  checkCoupon: async (query: string): Promise<any> => {
     const url = `/api/admin/coupon/promotion/checking${query}`;
-    return axiosClient.get(url);
+    const res = await axiosClient.get(url);
+    return res as any;
   },
 
-  updateCoupon: (id: string) => {
+  updateCoupon: async (id: string): Promise<any> => {
     const url = `/api/admin/coupon/promotion/${id}`;
-    return axiosClient.patch(url);
+    const res = await axiosClient.patch(url);
+    return res as any;
   },
 
-  getCoupons: (query: string) => {
+  getCoupons: async (query: string): Promise<any> => {
     const url = `/api/admin/coupon${query}`;
-    return axiosClient.get(url);
+    const res = await axiosClient.get(url);
+    return res as any;
   },
 
-  getCoupon: (id: string) => {
+  getCoupon: async (id: string): Promise<any> => {
     const url = `/api/admin/coupon/${id}`;
-    return axiosClient.get(url);
+    const res = await axiosClient.get(url);
+    return res as any;
   },
 };
 

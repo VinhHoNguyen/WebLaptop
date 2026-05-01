@@ -1,29 +1,34 @@
 import axiosClient from "./axiosClient";
 
 const OrderAPI = {
-  post_order: (data: Record<string, unknown>) => {
+  post_order: async (data: Record<string, unknown>): Promise<any> => {
     const url = "/api/Payment/order";
-    return axiosClient.post(url, data);
+    const res = await axiosClient.post(url, data);
+    return res as any;
   },
 
-  get_order: (id: string) => {
+  get_order: async (id: string): Promise<any> => {
     const url = `/api/Payment/order/${id}`;
-    return axiosClient.get(url);
+    const res = await axiosClient.get(url);
+    return res as any;
   },
 
-  get_detail: (id: string) => {
+  get_detail: async (id: string): Promise<any> => {
     const url = `/api/Payment/order/detail/${id}`;
-    return axiosClient.get(url);
+    const res = await axiosClient.get(url);
+    return res as any;
   },
 
-  post_email: (data: Record<string, unknown>) => {
+  post_email: async (data: Record<string, unknown>): Promise<any> => {
     const url = "/api/Payment/email";
-    return axiosClient.post(url, data);
+    const res = await axiosClient.post(url, data);
+    return res as any;
   },
 
-  cancel_order: (query: string) => {
+  cancel_order: async (query: string): Promise<any> => {
     const url = `/api/admin/Order/cancelorder${query}`;
-    return axiosClient.patch(url);
+    const res = await axiosClient.patch(url);
+    return res as any;
   },
 };
 
