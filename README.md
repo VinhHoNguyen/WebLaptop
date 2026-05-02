@@ -1,7 +1,7 @@
 # E-Commerce Web Application using MERN Stack and Microservices Architecture
 
 ## Description
-This is a web application for an e-commerce store that sells games. It uses a microservices architecture with separate Node.js services for identity, catalog, and checkout. Cart functionality is handled inside Checkout in the v2 stack.
+This is a web application for an e-commerce store that sells laptop. It uses a microservices architecture with separate Node.js services for identity, catalog, and checkout. Cart functionality is handled inside Checkout in the v2 stack.
 
 ## Installation
 
