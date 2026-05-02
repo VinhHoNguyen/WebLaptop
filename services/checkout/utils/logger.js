@@ -1,4 +1,4 @@
-const service = process.env.SERVICE_NAME || 'order-payment-service';
+const service = process.env.SERVICE_NAME || 'checkout-service';
 
 const write = (level, message, meta = {}) => {
   const record = {

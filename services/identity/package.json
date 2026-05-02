@@ -17,8 +17,11 @@
     "express": "^4.18.2",
     "express-async-handler": "^1.2.0",
     "jsonwebtoken": "^9.0.0",
+    "mongoose": "^7.0.0",
     "mysql2": "^3.14.0",
-    "nodemon": "^2.0.22"
+    "nodemon": "^2.0.22",
+    "redis": "^4.6.0",
+    "webgame-local-stack": "file:../.."
   },
   "keywords": []
 }

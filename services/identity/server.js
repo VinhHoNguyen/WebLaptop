@@ -12,7 +12,7 @@ require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
 require('./config/db_conn');
 const port = process.env.USER_PORT || 3001;
-const serviceName = process.env.SERVICE_NAME || 'user-service';
+const serviceName = process.env.SERVICE_NAME || 'identity-service';
 const corsOrigin = process.env.CORS_ORIGIN || '*';
 
 app.use(

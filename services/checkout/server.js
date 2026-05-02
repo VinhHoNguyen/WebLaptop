@@ -20,7 +20,7 @@ var paypal = require('paypal-rest-sdk');
 
 var upload = require('express-fileupload');
 const port = Number(process.env.CHECKOUT_PORT || process.env.PAYMENT_PORT || process.env.PORT || 3004)
-const serviceName = process.env.SERVICE_NAME || 'order-payment-service';
+const serviceName = process.env.SERVICE_NAME || 'checkout-service';
 const corsOrigin = process.env.CORS_ORIGIN || '*';
 
 const OrderAPI = require('./routes/orderRouter')

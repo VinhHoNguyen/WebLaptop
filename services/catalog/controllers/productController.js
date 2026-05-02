@@ -1,6 +1,45 @@
 const crypto = require('crypto');
+const fs = require('fs/promises');
+const path = require('path');
 const pool = require('../config/db_conn');
 const { sendSuccess, sendError } = require('../utils/response');
+
+let productsCache = null;
+
+// Load products from JSON file for fallback
+const loadProductsFromJson = async () => {
+    if (productsCache) return productsCache;
+    
+    const candidatePaths = [
+        process.env.PRODUCTS_JSON_PATH,
+        path.resolve(__dirname, '../../../products.json'),
+        path.resolve(process.cwd(), 'products.json'),
+    ].filter(Boolean);
+
+    for (const filePath of candidatePaths) {
+        try {
+            const raw = await fs.readFile(filePath, 'utf8');
+            const data = JSON.parse(raw);
+            productsCache = data.map(item => ({
+                id: item?._id?.$oid || item.id,
+                _id: item?._id?.$oid || item.id,
+                name: item.name,
+                price: item.price,
+                description: item.description || '',
+                category: item.category || '',
+                image: item.image || '',
+                stock: item.stock ?? 0,
+                specs: typeof item.specs === 'object' ? item.specs : null,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+            }));
+            return productsCache;
+        } catch (_error) {
+            // Continue to next path
+        }
+    }
+    return [];
+};
 
 const parseIds = (value = '') => {
     return value
@@ -93,11 +132,41 @@ const getProducts = async (req, res) => {
             message: 'Products fetched',
         });
     } catch (error) {
-        return sendError(res, req, {
-            status: 500,
-            message: 'Failed to fetch products',
-            errorCode: 'PRODUCT_FETCH_FAILED',
-        });
+        // Fallback to products.json
+        try {
+            let products = await loadProductsFromJson();
+            
+            // Apply filters
+            if (req.query.category && req.query.category.toLowerCase() !== 'all') {
+                products = products.filter(p => p.category.toLowerCase() === req.query.category.toLowerCase());
+            }
+            if (req.query.keyword) {
+                const keyword = req.query.keyword.toLowerCase();
+                products = products.filter(p => 
+                    p.name.toLowerCase().includes(keyword) || 
+                    p.category.toLowerCase().includes(keyword) ||
+                    p.description.toLowerCase().includes(keyword)
+                );
+            }
+            if (req.query.minPrice) {
+                products = products.filter(p => p.price >= Number(req.query.minPrice));
+            }
+            if (req.query.maxPrice || req.query.price) {
+                const maxPrice = Number(req.query.maxPrice ?? req.query.price);
+                products = products.filter(p => p.price <= maxPrice);
+            }
+            
+            return sendSuccess(res, req, {
+                data: products,
+                message: 'Products fetched from cache',
+            });
+        } catch (fallbackError) {
+            return sendError(res, req, {
+                status: 500,
+                message: 'Failed to fetch products',
+                errorCode: 'PRODUCT_FETCH_FAILED',
+            });
+        }
     }
 };
 
@@ -115,11 +184,21 @@ const getProductByName = async (req, res) => {
             message: 'Products fetched by name',
         });
     } catch (error) {
-        return sendError(res, req, {
-            status: 500,
-            message: 'Failed to fetch product by name',
-            errorCode: 'PRODUCT_FETCH_FAILED',
-        });
+        // Fallback to products.json
+        try {
+            const products = await loadProductsFromJson();
+            const data = products.filter(p => p.name === req.params.name);
+            return sendSuccess(res, req, {
+                data,
+                message: 'Products fetched by name from cache',
+            });
+        } catch (fallbackError) {
+            return sendError(res, req, {
+                status: 500,
+                message: 'Failed to fetch product by name',
+                errorCode: 'PRODUCT_FETCH_FAILED',
+            });
+        }
     }
 };
 
@@ -146,11 +225,30 @@ const getProductById = async (req, res) => {
             message: 'Product fetched',
         });
     } catch (error) {
-        return sendError(res, req, {
-            status: 500,
-            message: 'Failed to fetch product by id',
-            errorCode: 'PRODUCT_FETCH_FAILED',
-        });
+        // Fallback to products.json
+        try {
+            const products = await loadProductsFromJson();
+            const product = products.find(p => p.id === req.params.id);
+            
+            if (!product) {
+                return sendError(res, req, {
+                    status: 404,
+                    message: 'Product not found',
+                    errorCode: 'PRODUCT_NOT_FOUND',
+                });
+            }
+
+            return sendSuccess(res, req, {
+                data: product,
+                message: 'Product fetched from cache',
+            });
+        } catch (fallbackError) {
+            return sendError(res, req, {
+                status: 500,
+                message: 'Failed to fetch product by id',
+                errorCode: 'PRODUCT_FETCH_FAILED',
+            });
+        }
     }
 };
 

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -13,6 +13,7 @@
     "axios": "^1.7.7",
     "bootstrap": "^5.2.3",
     "fs": "^0.0.1-security",
+    "query-string": "^9.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.52.2",
@@ -20,7 +21,7 @@
     "react-router-dom": "^6.11.2",
     "redux": "^5.0.1",
     "socket.io-client": "^4.7.5",
-    "query-string": "^9.0.0"
+    "webgame-local-stack": "file:.."
   },
   "devDependencies": {
     "@types/node": "^20.2.5",

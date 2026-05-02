@@ -34,10 +34,11 @@ function ProductInfo() {
             "Content-Type": "application/json",
           },
         });
-        const data = await response.json();
-        console.log(data);
-        setInputValue(data);
-        setSelectedImage(data?.image);
+        const payload = await response.json();
+        const product = payload?.data ?? payload;
+        console.log(product);
+        setInputValue(product);
+        setSelectedImage(product?.image);
       } catch (error) {
         console.error("Error:", error);
       }

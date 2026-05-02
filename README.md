@@ -24,6 +24,8 @@ VITE_USER_API_URL=http://localhost:3001
 VITE_PRODUCT_API_URL=http://localhost:3002
 VITE_CHECKOUT_API_URL=http://localhost:3004
 VITE_CART_API_URL=http://localhost:3004
+VITE_PAYMENT_API_URL=http://localhost:3004
+VITE_SOCKET_URL=http://localhost:3004
 ```
 2. Start the v2 full stack with one command:
 ```bash
@@ -53,7 +55,7 @@ npm run docker:prod:up
 
 ## V2 topology (Identity + Catalog + Checkout)
 
-The repository now uses the v2 stack by default. Checkout serves cart endpoints and stores data in MySQL.
+The repository now uses the v2 stack by default. Checkout serves cart, payment, and socket endpoints, and stores data in MySQL.
 
 Useful commands:
 
@@ -64,7 +66,8 @@ npm run docker:v2:down
 
 Notes:
 - Cart is no longer a standalone service.
-- Front-end can point cart/payment/socket to the same checkout base URL via `VITE_CHECKOUT_API_URL`.
+- `VITE_CHECKOUT_API_URL` is the canonical base URL for cart, payment, and socket traffic.
+- `VITE_CART_API_URL`, `VITE_PAYMENT_API_URL`, and `VITE_SOCKET_URL` are kept as compatibility aliases.
 - k3d manifests for this migration are in `k8s-v2/`.
 
 ## CI/CD

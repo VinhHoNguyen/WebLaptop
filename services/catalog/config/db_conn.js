@@ -5,44 +5,11 @@ const pool = mysql.createPool({
   port: Number(process.env.MYSQL_PORT || 3306),
   user: process.env.MYSQL_USER || 'root',
   password: process.env.MYSQL_PASSWORD || '',
-  database: process.env.MYSQL_DATABASE || 'product_db',
+  database: process.env.MYSQL_DATABASE || 'checkout_db',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
   namedPlaceholders: true,
 });
 
-module.exports = pool;const mongoose = require('mongoose');
-const redis = require('redis');
-const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
-require('dotenv').config({ path: path.resolve(__dirname, '../.env'), override: true });
-
-const redisClient = redis.createClient();
-
-const mongo_username = process.env.MONGO_USERNAME;
-const mongo_password = process.env.MONGO_PASSWORD;
-const mongo_cluster = process.env.MONGO_CLUSTER;
-const mongo_database = process.env.PRODUCT_MONGO_DBNAME || process.env.MONGO_DBNAME || 'product_db';
-const mongo_uri = process.env.PRODUCT_MONGO_URI || process.env.MONGO_URI;
-
-const withDbName = (uri, dbName) => {
-        try {
-                const parsed = new URL(uri);
-                parsed.pathname = `/${dbName}`;
-                return parsed.toString();
-        } catch (_error) {
-                return uri;
-        }
-};
-
-const connectionUri =
-        (mongo_uri ? withDbName(mongo_uri, mongo_database) : null) ||
-        `mongodb+srv://${mongo_username}:${mongo_password}@${mongo_cluster}/${mongo_database}?retryWrites=true&w=majority`;
-
-mongoose.connect(connectionUri
-, { useNewUrlParser: true, useUnifiedTopology: true })
-.then(() => console.log(`Connected to: ${mongoose.connection.name}`))
-.catch(err => console.log(err));
-
-module.exports = mongoose;
+module.exports = pool;

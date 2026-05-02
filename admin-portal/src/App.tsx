@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type AdminPage = "dashboard" | "products";
 
@@ -27,14 +27,6 @@ const kpiCards = [
   { title: "Earnings", value: "$8,750", delta: "12.5% This Month", tone: "orange" },
   { title: "Support Tickets", value: "68", delta: "Pending", tone: "red" },
 ] as const;
-
-const products: ProductRow[] = [
-  { id: "p1", image: "SM", name: "Smartphone", category: "Electronics", stock: 320, status: "Active", price: 699 },
-  { id: "p2", image: "LP", name: "Laptop", category: "Electronics", stock: 120, status: "Active", price: 1099 },
-  { id: "p3", image: "WH", name: "Wireless Headphones", category: "Accessories", stock: 215, status: "Active", price: 199 },
-  { id: "p4", image: "SW", name: "Smart Watch", category: "Wearable", stock: 50, status: "Low Stock", price: 299 },
-  { id: "p5", image: "CM", name: "Coffee Maker", category: "Home Appliance", stock: 87, status: "Inactive", price: 49.99 },
-];
 
 const orders: OrderRow[] = [
   { id: "#10245", customer: "John Doe", status: "Completed", amount: 150 },
@@ -66,6 +58,58 @@ const messages = [
 
 function App() {
   const [page, setPage] = useState<AdminPage>("dashboard");
+  const [products, setProducts] = useState<ProductRow[]>([]);
+  const [totalProducts, setTotalProducts] = useState(0);
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch("http://localhost:3002/products", {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        return;
+      }
+
+      const payload = await response.json();
+      const data = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.data)
+          ? payload.data
+          : [];
+
+      const normalized = data.map((item: any): ProductRow => {
+        const stock = item.stock ?? 50;
+        const status: ProductStatus = stock === 0 ? "Inactive" : stock < 10 ? "Low Stock" : "Active";
+        const imageAbbr = (item.name || "")
+          .split(" ")
+          .slice(0, 2)
+          .map((w: string) => w[0].toUpperCase())
+          .join("");
+
+        return {
+          id: item._id || `p-${Date.now()}`,
+          image: imageAbbr || "P",
+          name: item.name || "Unknown",
+          category: item.category || "Laptop",
+          stock: stock,
+          status: status,
+          price: item.price || 0,
+        };
+      });
+
+      setProducts(normalized);
+      setTotalProducts(normalized.length);
+    } catch (error) {
+      console.error("Failed to fetch products:", error);
+    }
+  };
 
   const pageTitle = useMemo(() => {
     return page === "dashboard" ? "Welcome back, Admin!" : "Products";
@@ -110,7 +154,7 @@ function App() {
           </div>
         </header>
 
-        {page === "dashboard" ? <DashboardView /> : <ProductsView rows={products} />}
+        {page === "dashboard" ? <DashboardView /> : <ProductsView rows={products} total={totalProducts} />}
       </main>
     </div>
   );
@@ -221,7 +265,7 @@ function DashboardView() {
   );
 }
 
-function ProductsView({ rows }: { rows: ProductRow[] }) {
+function ProductsView({ rows, total }: { rows: ProductRow[]; total: number }) {
   return (
     <section className="products-page">
       <div className="panel search-wrap">
@@ -246,7 +290,7 @@ function ProductsView({ rows }: { rows: ProductRow[] }) {
       </div>
 
       <article className="panel products-table-wrap">
-        <div className="table-title">Showing {rows.length} of 120 Products</div>
+        <div className="table-title">Showing {rows.length} of {total} Products</div>
         <table className="products-table">
           <thead>
             <tr>

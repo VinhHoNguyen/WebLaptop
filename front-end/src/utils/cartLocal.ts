@@ -16,11 +16,15 @@ export const getCartKey = () => {
 };
 
 const normalizeServerItems = (response: any) => {
-  if (Array.isArray(response?.items)) {
-    return response.items;
+  const payload = response?.data ?? response;
+  if (Array.isArray(payload?.items)) {
+    return payload.items;
   }
-  if (Array.isArray(response?.Products)) {
-    return response.Products;
+  if (Array.isArray(payload?.products)) {
+    return payload.products;
+  }
+  if (Array.isArray(payload?.Products)) {
+    return payload.Products;
   }
   return [] as any[];
 };

@@ -5,7 +5,7 @@ import { API_BASE_URLS } from "../config/api";
 import { formatVnd } from "../utils/currency";
 function Cart() {
 
-  const [cartData, setCartData] = useState({ total: 0, Products: [] });
+  const [cartData, setCartData] = useState<{ total: number; products: any[] }>({ total: 0, products: [] });
 
   useEffect(() => {
     const fetchCartData = async () => {
@@ -28,9 +28,17 @@ function Cart() {
 
         if (response.ok) {
           console.log("Welcome to cart");
-          const data = await response.json();
-          // console.log(data.Products);
-          setCartData(data);
+          const payload = await response.json();
+          const data = payload?.data ?? payload ?? { total: 0, products: [] };
+          const products = Array.isArray(data.products)
+            ? data.products
+            : Array.isArray(data.Products)
+              ? data.Products
+              : [];
+          setCartData({
+            total: Number(data.total || 0),
+            products,
+          });
         } else {
           // Check if token is invalid (e.g., expired or unauthorized)
           if (response.status === 401) {
@@ -76,7 +84,7 @@ function Cart() {
                   </thead>
                   <tbody>
                     
-                  {cartData.Products.map((product: any) => (
+                  {cartData.products.map((product: any) => (
                     <tr className="cart-table-content" key={product._id}>
                       <td className="cart-table-image-info">
                         <img src={product.image} alt="Hình ảnh sản phẩm"/>

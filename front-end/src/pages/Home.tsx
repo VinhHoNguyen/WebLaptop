@@ -35,7 +35,12 @@ function Home() {
 
       if (response.ok) {
         const jsonData = await response.json();
-        setData(jsonData);
+        const products = Array.isArray(jsonData)
+          ? jsonData
+          : Array.isArray(jsonData?.data)
+            ? jsonData.data
+            : [];
+        setData(products);
       } else {
         console.log("Không thể tải sản phẩm");
       }

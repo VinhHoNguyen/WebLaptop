@@ -85,7 +85,12 @@ function Admin() {
         return;
       }
 
-      const data = (await response.json()) as Array<{
+      const payload = await response.json();
+      const data = (Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.data)
+          ? payload.data
+          : []) as Array<{
         _id: string;
         name: string;
         description?: string;
@@ -275,9 +280,10 @@ function Admin() {
         });
 
         if (response.ok) {
-          const created = (await response.json()) as { _id: string };
-          normalized.backendId = created._id;
-          normalized.id = `local-${created._id}`;
+          const created = await response.json();
+          const createdProduct = created?.data ?? created;
+          normalized.backendId = createdProduct?._id ?? createdProduct?.id;
+          normalized.id = `local-${normalized.backendId ?? Date.now()}`;
         }
 
         setProducts((prev) => [normalized, ...prev]);

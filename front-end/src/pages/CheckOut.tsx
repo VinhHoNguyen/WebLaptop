@@ -101,8 +101,14 @@ function CheckOut() {
           return;
         }
 
-        const data = (await response.json()) as { Products?: any[] };
-        const items = (data.Products || []).map((product) => ({
+        const payload = await response.json();
+        const data = payload?.data ?? payload ?? {};
+        const products = Array.isArray(data.products)
+          ? data.products
+          : Array.isArray(data.Products)
+            ? data.Products
+            : [];
+        const items = products.map((product) => ({
           id_cart: product._id,
           id_product: product._id,
           name_product: product.name,

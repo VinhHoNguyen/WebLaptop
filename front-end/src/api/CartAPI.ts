@@ -45,7 +45,11 @@ const CartAPI = {
 
   Get_Cart_Count: async () => {
     const data = await cartClient.get("/cart");
-    const products = Array.isArray(data?.Products) ? data.Products : [];
+    const products = Array.isArray(data?.products)
+      ? data.products
+      : Array.isArray(data?.Products)
+        ? data.Products
+        : [];
     return products.length;
   },
 
