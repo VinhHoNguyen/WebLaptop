@@ -26,6 +26,7 @@ VITE_CHECKOUT_API_URL=http://localhost:3004
 VITE_CART_API_URL=http://localhost:3004
 VITE_PAYMENT_API_URL=http://localhost:3004
 VITE_SOCKET_URL=http://localhost:3004
+VITE_N8N_CHAT_WEBHOOK_URL=http://localhost:5678/webhook/laptop-chat
 ```
 2. Start the v2 full stack with one command:
 ```bash

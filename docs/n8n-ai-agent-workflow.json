@@ -1,0 +1,95 @@
+{
+  "name": "Laptop AI Agent Advisor",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "laptop-chat",
+        "responseMode": "responseNode",
+        "responseData": "first",
+        "options": {}
+      },
+      "id": "webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message }}",
+        "options": {
+          "systemMessage": "Bạn là AI agent tư vấn laptop cho website thương mại điện tử. Trả lời ngắn gọn, chuyên nghiệp và thân thiện. Luôn ưu tiên đề xuất tối đa 3 sản phẩm phù hợp nhất. Nếu chưa rõ nhu cầu, hãy hỏi ngân sách hoặc mục đích sử dụng.",
+          "maxIterations": 10
+        }
+      },
+      "id": "ai-agent",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [560, 300]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.1-flash-lite",
+        "options": {}
+      },
+      "id": "gemini",
+      "name": "Connect Gemini",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [560, 100],
+      "credentials": {
+        "googlePalmApi": {
+          "name": "Google Gemini account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "firstPropertyObject",
+        "responseBody": "={{ { answer: $json.output, products: $json.products || [] } }}",
+        "options": {}
+      },
+      "id": "respond",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [880, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "ai_languageModel": [
+        [
+          {
+            "node": "Connect Gemini",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}

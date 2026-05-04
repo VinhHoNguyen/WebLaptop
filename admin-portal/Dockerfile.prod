@@ -2,11 +2,12 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
-COPY package*.json ./
 
-RUN npm ci
-
+# copy sources first so local file:... deps resolve during install
 COPY . .
+
+# install from package files (devDependencies needed for build)
+RUN npm ci
 
 ARG VITE_USER_API_URL=http://localhost:3001
 ARG VITE_PRODUCT_API_URL=http://localhost:3002

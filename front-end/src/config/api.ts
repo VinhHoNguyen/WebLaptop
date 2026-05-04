@@ -8,4 +8,5 @@ export const API_BASE_URLS = {
   cart: resolveBaseUrl(import.meta.env.VITE_CHECKOUT_API_URL ?? import.meta.env.VITE_CART_API_URL, "http://localhost:3004"),
   payment: resolveBaseUrl(import.meta.env.VITE_CHECKOUT_API_URL ?? import.meta.env.VITE_PAYMENT_API_URL, "http://localhost:3004"),
   socket: resolveBaseUrl(import.meta.env.VITE_CHECKOUT_API_URL ?? import.meta.env.VITE_SOCKET_URL, "http://localhost:3004"),
+  n8nChat: resolveBaseUrl(import.meta.env.VITE_N8N_CHAT_WEBHOOK_URL, "http://localhost:5678/webhook/laptop-chat"),
 };
