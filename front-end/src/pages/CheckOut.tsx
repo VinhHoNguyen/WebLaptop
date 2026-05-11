@@ -108,7 +108,7 @@ function CheckOut() {
           : Array.isArray(data.Products)
             ? data.Products
             : [];
-        const items = products.map((product) => ({
+        const items = products.map((product: any) => ({
           id_cart: product._id,
           id_product: product._id,
           name_product: product.name,
@@ -472,7 +472,7 @@ function CheckOut() {
                     </tr>
                   </thead>
                   <tbody>
-                    {carts.map((value) => (
+                    {carts.map((value: LocalCartItem) => (
                       <tr className="cart_item" key={value.id_cart}>
                         <td className="cart-product-name">
                           <div className="order-item-row">

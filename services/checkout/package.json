@@ -19,8 +19,7 @@
     "mysql2": "^3.14.0",
     "node-fetch": "^2.7.0",
     "paypal-rest-sdk": "^1.7.1",
-    "socket.io": "^4.8.1",
-    "webgame-local-stack": "file:../.."
+    "socket.io": "^4.8.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"

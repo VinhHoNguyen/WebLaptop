@@ -14,6 +14,7 @@ services:
       - mysql_data:/var/lib/mysql
       - ./services/checkout/sql/schema.sql:/docker-entrypoint-initdb.d/01-checkout-schema.sql:ro
       - ./services/identity/sql/schema.sql:/docker-entrypoint-initdb.d/02-identity-schema.sql:ro
+      - ./services/identity/sql/04-identity-seed.sql:/docker-entrypoint-initdb.d/04-identity-seed.sql:ro
       - ./services/catalog/sql/schema.sql:/docker-entrypoint-initdb.d/03-product-schema.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -u$$MYSQL_USER -p$$MYSQL_PASSWORD || exit 1"]
