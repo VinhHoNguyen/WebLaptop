@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { API_BASE_URLS } from "../config/api";
 import { formatVnd } from "../utils/currency";
 import "../Style/ChatAssistant.css";
@@ -33,6 +33,23 @@ interface ChatResponse {
   data?: unknown;
 }
 
+const CHAT_SESSION_STORAGE_KEY = "webgame-chat-session-id";
+
+const getChatSessionId = () => {
+  const existingSessionId = window.localStorage.getItem(CHAT_SESSION_STORAGE_KEY);
+  if (existingSessionId) {
+    return existingSessionId;
+  }
+
+  const generatedSessionId =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `chat-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+  window.localStorage.setItem(CHAT_SESSION_STORAGE_KEY, generatedSessionId);
+  return generatedSessionId;
+};
+
 const createMessage = (role: ChatRole, content: string): ChatMessage => ({
   id: `${role}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
   role,
@@ -43,25 +60,21 @@ const parseProductsFromResponse = (data: ChatResponse): Product[] => {
   if (Array.isArray(data.products)) {
     return data.products;
   }
-
   const candidateText = [data.answer, data.text, data.message].filter(Boolean).join("\n");
   if (!candidateText) {
     return [];
   }
-
   try {
     const parsed = JSON.parse(candidateText);
     if (Array.isArray(parsed)) {
       return parsed.filter((item): item is Product => Boolean(item?.name && item?.price));
     }
-
     if (parsed && typeof parsed === "object" && Array.isArray((parsed as ChatResponse).products)) {
       return (parsed as ChatResponse).products || [];
     }
   } catch (_error) {
     return [];
   }
-
   return [];
 };
 
@@ -70,7 +83,6 @@ const formatProductSpecs = (product: Product) => {
   if (!specs) {
     return [];
   }
-
   return [
     specs.brand ? `Hãng: ${specs.brand}` : null,
     specs.cpu ? `CPU: ${specs.cpu}` : null,
@@ -79,7 +91,8 @@ const formatProductSpecs = (product: Product) => {
   ].filter(Boolean) as string[];
 };
 
-const ChatAssistant = () => {
+export default function ChatBubble() {
+  const [sessionId] = useState(() => getChatSessionId());
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     createMessage(
@@ -100,18 +113,20 @@ const ChatAssistant = () => {
   const sendMessage = async (text?: string) => {
     const messageText = (text || input).trim();
     if (!messageText || isLoading) return;
-
     const userMessage = createMessage("user", messageText);
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
     setError(null);
     setRecommendedProducts([]);
-
     try {
+      const chatHistory = [...messages, userMessage].map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+      }));
       const webhookUrl = API_BASE_URLS.n8nChat;
       if (!webhookUrl) {
-        setError("Webhook chưa được cấu hình (VITE_N8N_CHAT_WEBHOOK_URL)");
+        setError("Webhook chưa được cấu hình");
         setMessages((prev) => [
           ...prev,
           createMessage("assistant", "❌ Lỗi: Webhook chưa được cấu hình."),
@@ -119,28 +134,21 @@ const ChatAssistant = () => {
         setIsLoading(false);
         return;
       }
-
       const response = await fetch(webhookUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+        body: new URLSearchParams({
+          sessionId,
           message: messageText,
-          history: messages.map((msg) => ({
-            role: msg.role,
-            content: msg.content,
-          })),
-        }),
+          history: JSON.stringify(chatHistory),
+        }).toString(),
       });
-
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-
       const data = (await response.json()) as ChatResponse;
-      const assistantText =
-        data.answer || data.text || data.message || JSON.stringify(data);
+      const assistantText = data.answer || data.text || data.message || JSON.stringify(data);
       const products = parseProductsFromResponse(data);
-
       setMessages((prev) => [...prev, createMessage("assistant", assistantText)]);
       setRecommendedProducts(products.slice(0, 3));
     } catch (err) {
@@ -148,10 +156,7 @@ const ChatAssistant = () => {
       setError(errorMsg);
       setMessages((prev) => [
         ...prev,
-        createMessage(
-          "assistant",
-          `❌ Lỗi kết nối: ${errorMsg}\n\nHãy kiểm tra:\n1. Webhook URL có đúng?\n2. n8n server có chạy không?\n3. Thử lại sau ít phút.`
-        ),
+        createMessage("assistant", `❌ Lỗi kết nối: ${errorMsg}`),
       ]);
     } finally {
       setIsLoading(false);
@@ -159,109 +164,85 @@ const ChatAssistant = () => {
   };
 
   return (
-    <div className="chat-assistant-shell">
+    <>
       {isOpen && (
-        <div className="chat-assistant-panel" role="dialog" aria-label="Chat tư vấn laptop">
-          <div className="chat-assistant-header">
-            <div>
-              <p className="chat-assistant-kicker">AI Agent</p>
-              <h3>Tư Vấn Laptop</h3>
-            </div>
-            <button
-              type="button"
-              className="chat-assistant-close"
-              onClick={() => setIsOpen(false)}
-              aria-label="Đóng chat"
-            >
-              ✕
-            </button>
-          </div>
-
-          <div className="chat-assistant-messages">
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`chat-assistant-message message-${msg.role}`}
+        <div className="chat-assistant-shell" style={{ display: "flex" }}>
+          <div className="chat-assistant-panel" role="dialog" aria-label="Chat tư vấn laptop">
+            <div className="chat-assistant-header">
+              <div>
+                <p className="chat-assistant-kicker">AI Agent</p>
+                <h3>Tư Vấn Laptop</h3>
+              </div>
+              <button
+                type="button"
+                className="chat-assistant-close"
+                onClick={() => setIsOpen(false)}
+                aria-label="Đóng chat"
               >
-                {msg.role === "assistant" && <span className="message-avatar">🤖</span>}
-                <div className="message-content">
-                  {msg.content.split("\n").map((line, i) => (
-                    <p key={i}>{line}</p>
-                  ))}
+                ✕
+              </button>
+            </div>
+            <div className="chat-assistant-messages">
+              {messages.map((msg) => (
+                <div key={msg.id} className={`chat-assistant-message message-${msg.role}`}>
+                  {msg.role === "assistant" && <span className="message-avatar">🤖</span>}
+                  <div className="message-content">
+                    {msg.content.split("\n").map((line, i) => (<p key={i}>{line}</p>))}
+                  </div>
                 </div>
-              </div>
-            ))}
-            {recommendedProducts.length > 0 && (
-              <div className="chat-product-list">
-                <p className="chat-product-title">Sản phẩm gợi ý</p>
-                {recommendedProducts.map((product, index) => (
-                  <article key={product.id ?? `${product.name}-${index}`} className="chat-product-card">
-                    <div className="chat-product-card-header">
-                      <div>
-                        <h4>{product.name}</h4>
-                        {product.category && <p>{product.category}</p>}
-                      </div>
-                      <div className="chat-product-price">{formatVnd(product.price)}</div>
-                    </div>
-                    {formatProductSpecs(product).length > 0 && (
-                      <ul className="chat-product-specs">
-                        {formatProductSpecs(product).map((spec) => (
-                          <li key={spec}>{spec}</li>
-                        ))}
-                      </ul>
-                    )}
-                    {typeof product.stock === "number" && (
-                      <p className="chat-product-stock">Tồn kho: {product.stock}</p>
-                    )}
-                  </article>
-                ))}
-              </div>
-            )}
-            {isLoading && (
-              <div className="chat-assistant-message message-assistant">
-                <span className="message-avatar">🤖</span>
-                <div className="message-content">
-                  <p>Đang xử lý...</p>
+              ))}
+              {isLoading && (
+                <div className="chat-assistant-message message-assistant">
+                  <span className="message-avatar">🤖</span>
+                  <div className="message-content"><p>Đang xử lý...</p></div>
                 </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          <form
-            className="chat-assistant-form"
-            onSubmit={(e) => {
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+            <form className="chat-assistant-form" onSubmit={(e) => {
               e.preventDefault();
               sendMessage();
-            }}
-          >
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Nhập câu hỏi..."
-              disabled={isLoading}
-              aria-label="Nhập tin nhắn"
-            />
-            <button type="submit" disabled={isLoading}>
-              {isLoading ? "..." : "Gửi"}
-            </button>
-          </form>
-
-          {error && <p className="chat-assistant-error">⚠️ {error}</p>}
+            }}>
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Nhập câu hỏi..."
+                disabled={isLoading}
+              />
+              <button type="submit" disabled={isLoading}>
+                {isLoading ? "..." : "Gửi"}
+              </button>
+            </form>
+            {error && <p className="chat-assistant-error">⚠️ {error}</p>}
+          </div>
         </div>
       )}
-
       <button
         type="button"
-        className="chat-assistant-launcher"
         onClick={() => setIsOpen(!isOpen)}
-        aria-label={isOpen ? "Ẩn chat" : "Mở chat"}
+        style={{
+          position: "fixed",
+          bottom: "30px",
+          right: "30px",
+          zIndex: 9999,
+          width: "60px",
+          height: "60px",
+          borderRadius: "50%",
+          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          color: "white",
+          border: "none",
+          fontSize: "28px",
+          cursor: "pointer",
+          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+          transition: "all 0.3s ease",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
       >
-        {isOpen ? "❌" : "💬 Chat"}
+        💬
       </button>
-    </div>
+    </>
   );
-};
-
-export default ChatAssistant;
+}

@@ -4,6 +4,8 @@ const router = express.Router();
 
 router.get('/', productController.getProducts);
 
+router.get('/rag/context', productController.getRagContext);
+
 router.get('/id/:id', productController.getProductById);
 
 router.get('/:idOrName', productController.findProduct);

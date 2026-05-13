@@ -306,6 +306,7 @@ function CheckOut() {
                         Họ và tên <span className="required">*</span>
                       </label>
                       <input
+                        id="fullname"
                         placeholder="Nhập họ tên"
                         type="text"
                         {...register("fullname", { required: true })}
@@ -319,6 +320,7 @@ function CheckOut() {
                         Số điện thoại <span className="required">*</span>
                       </label>
                       <input
+                        id="phone"
                         placeholder="Nhập số điện thoại"
                         type="text"
                         {...register("phone", { required: true })}
@@ -332,6 +334,7 @@ function CheckOut() {
                         Email <span className="required">*</span>
                       </label>
                       <input
+                        id="email"
                         placeholder="Nhập email"
                         type="email"
                         {...register("email", { required: true })}
@@ -347,6 +350,7 @@ function CheckOut() {
                       <input
                         type="text"
                         id="from_places"
+                        name="from_places"
                         disabled
                         value="155 Sư Vạn Hạnh, Phường 13, Quận 10, Hồ Chí Minh"
                         style={{ backgroundColor: "#f5f5f5" }}
@@ -363,6 +367,7 @@ function CheckOut() {
                       <input
                         type="text"
                         id="to_places"
+                        name="to_places"
                         placeholder="Nhập địa chỉ giao hàng"
                         value={searchAddress}
                         onChange={(event) => setSearchAddress(event.target.value)}
@@ -390,6 +395,7 @@ function CheckOut() {
                     <div className="checkout-form-list">
                       <label className="address-label">Địa chỉ nhận hàng (Chính thức):</label>
                       <input
+                        id="address"
                         type="text"
                         {...register("address", { required: true })}
                         value={information.address || ""}

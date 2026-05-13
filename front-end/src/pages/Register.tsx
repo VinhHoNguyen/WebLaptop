@@ -67,22 +67,28 @@ function Register() {
             <div className="col">
               <div className="field">
                 <input
+                  id="firstName"
+                  name="firstName"
                   type="text"
                   className="form-control"
                   required
                   placeholder="Họ"
                   onChange={(event) => setFirstName(event.target.value)}
+                  autoComplete="family-name"
                 ></input>
               </div>
             </div>
             <div className="col">
               <div className="field">
                 <input
+                  id="lastName"
+                  name="lastName"
                   type="text"
                   className="form-control"
                   required
                   placeholder="Tên"
                   onChange={(event) => setLastName(event.target.value)}
+                  autoComplete="given-name"
                 ></input>
               </div>
             </div>
@@ -145,11 +151,14 @@ function Register() {
             <div className="col">
               <div className="field">
                 <input
+                  id="confirmPassword"
+                  name="confirmPassword"
                   type="password"
                   className="form-control"
                   required
                   placeholder="Xác nhận mật khẩu"
                   onChange={(event) => setconfPassword(event.target.value)}
+                  autoComplete="new-password"
                 ></input>
               </div>
             </div>

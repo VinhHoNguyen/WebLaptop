@@ -116,6 +116,140 @@ const buildQuery = (queryParams = {}) => {
     return { where, values };
 };
 
+const toFiniteNumber = (value) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+};
+
+const parseBudgetFromQuery = (query = '') => {
+    const normalized = String(query).toLowerCase();
+    const match = normalized.match(/(\d[\d.,]*)\s*(k|nghin|ngh?n|trieu|triệu|m)?/i);
+    if (!match) {
+        return null;
+    }
+
+    const amount = toFiniteNumber(String(match[1]).replace(/[.,]/g, ''));
+    if (amount === null) {
+        return null;
+    }
+
+    const unit = (match[2] || '').toLowerCase();
+    if (unit === 'k' || unit === 'nghin' || unit === 'ngh?n') {
+        return amount * 1000;
+    }
+    if (unit === 'm' || unit === 'trieu' || unit === 'triệu') {
+        return amount * 1000000;
+    }
+
+    return amount;
+};
+
+const tokenizeQuery = (query = '') => {
+    return String(query)
+        .toLowerCase()
+        .split(/[^\p{L}\p{N}]+/u)
+        .filter((term) => term.length >= 2);
+};
+
+const scoreProductForQuery = (product, terms, budget) => {
+    const specs = product?.specs || {};
+    const haystack = [
+        product?.name,
+        product?.description,
+        product?.category,
+        specs.brand,
+        specs.cpu,
+        specs.gpu,
+        specs.display,
+    ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+    const termScore = terms.reduce((score, term) => {
+        return score + (haystack.includes(term) ? 1 : 0);
+    }, 0);
+
+    const stockScore = Number(product?.stock || 0) > 0 ? 0.5 : 0;
+    const priceValue = toFiniteNumber(product?.price);
+    const budgetScore = budget !== null && priceValue !== null
+        ? Math.max(0, 3 - (Math.abs(priceValue - budget) / Math.max(budget, 1)))
+        : 0;
+
+    return termScore + stockScore + budgetScore;
+};
+
+const selectRelevantProducts = (products, query, limit = 8) => {
+    const terms = tokenizeQuery(query);
+    const budget = parseBudgetFromQuery(query);
+
+    return products
+        .map((product) => ({
+            product,
+            score: scoreProductForQuery(product, terms, budget),
+        }))
+        .sort((left, right) => right.score - left.score)
+        .slice(0, limit)
+        .map((item) => item.product);
+};
+
+const buildRagContext = (products, query, limit = 8) => {
+    const relevantProducts = selectRelevantProducts(products, query, limit);
+    const prices = products
+        .map((product) => toFiniteNumber(product.price))
+        .filter((value) => value !== null);
+
+    return {
+        totalProducts: products.length,
+        availableProducts: products.filter((product) => Number(product.stock || 0) > 0).length,
+        categories: Array.from(new Set(products.map((product) => product.category).filter(Boolean))).slice(0, 15),
+        priceRange: prices.length > 0 ? { min: Math.min(...prices), max: Math.max(...prices) } : null,
+        relevantProducts,
+    };
+};
+
+const getRagContext = async (req, res) => {
+    const query = String(req.query.q || req.query.message || '').trim();
+    const limit = Math.max(1, Math.min(Number(req.query.k) || 8, 20));
+
+    if (!query) {
+        return sendError(res, req, {
+            status: 400,
+            message: 'Missing query. Use ?q=your question',
+            errorCode: 'VALIDATION_ERROR',
+        });
+    }
+
+    try {
+        const [rows] = await pool.query(
+            `SELECT id, name, price, description, category, image, stock, specs, createdAt, updatedAt
+             FROM products
+             ORDER BY updatedAt DESC
+             LIMIT 500`
+        );
+
+        const products = rows.map(normalizeProduct);
+        return sendSuccess(res, req, {
+            data: buildRagContext(products, query, limit),
+            message: 'RAG context generated',
+        });
+    } catch (_error) {
+        try {
+            const products = await loadProductsFromJson();
+            return sendSuccess(res, req, {
+                data: buildRagContext(products, query, limit),
+                message: 'RAG context generated from cache',
+            });
+        } catch (_fallbackError) {
+            return sendError(res, req, {
+                status: 500,
+                message: 'Failed to generate RAG context',
+                errorCode: 'RAG_CONTEXT_FAILED',
+            });
+        }
+    }
+};
+
 const getProducts = async (req, res) => {
     try {
         const { where, values } = buildQuery(req.query);
@@ -405,6 +539,7 @@ const deleteProduct = async (req, res) => {
 
 module.exports = {
     getProducts,
+    getRagContext,
     getProductByName,
     createProduct,
     getProductById,

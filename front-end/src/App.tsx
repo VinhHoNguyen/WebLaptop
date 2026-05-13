@@ -13,7 +13,7 @@ import OrderHistory from "./pages/OrderHistory";
 import OrderMomo from "./pages/OrderMomo";
 import OrderSuccess from "./pages/OrderSuccess";
 import NavBar from "./component/NavBar";
-import ChatAssistant from "./component/ChatAssistant";
+import ChatBubble from "./component/ChatBubble";
 function App() {
   return (
     <Fragment>
@@ -33,7 +33,7 @@ function App() {
           <Route path="/history" element={<OrderHistory />} />
         </Routes>
       </Router>
-      <ChatAssistant />
+      <ChatBubble />
     </Fragment>
   );
 }

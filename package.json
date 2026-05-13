@@ -3,9 +3,9 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "dev:all": "concurrently -n identity,catalog,checkout,frontend -c green,blue,magenta,yellow \"npm --prefix services/identity run dev\" \"npm --prefix services/catalog run dev\" \"npm --prefix services/checkout run dev\" \"npm --prefix front-end run dev\"",
-    "dev:v2": "concurrently -n identity,catalog,checkout,frontend -c green,blue,magenta,yellow \"npm --prefix services/identity run dev\" \"npm --prefix services/catalog run dev\" \"npm --prefix services/checkout run dev\" \"npm --prefix front-end run dev\"",
-    "dev:checkout": "concurrently -n catalog,checkout,frontend -c blue,magenta,yellow \"npm --prefix services/catalog run dev\" \"npm --prefix services/checkout run dev\" \"npm --prefix front-end run dev\"",
+    "dev:all": "concurrently -n identity,catalog,checkout,frontend,webhook -c green,blue,magenta,yellow,cyan \"npm --prefix services/identity run dev\" \"npm --prefix services/catalog run dev\" \"npm --prefix services/checkout run dev\" \"npm --prefix front-end run dev\" \"node tools/mock-n8n-webhook.js\"",
+    "dev:v2": "concurrently -n identity,catalog,checkout,frontend,webhook -c green,blue,magenta,yellow,cyan \"npm --prefix services/identity run dev\" \"npm --prefix services/catalog run dev\" \"npm --prefix services/checkout run dev\" \"npm --prefix front-end run dev\" \"node tools/mock-n8n-webhook.js\"",
+    "dev:checkout": "concurrently -n catalog,checkout,frontend,webhook -c blue,magenta,yellow,cyan \"npm --prefix services/catalog run dev\" \"npm --prefix services/checkout run dev\" \"npm --prefix front-end run dev\" \"node tools/mock-n8n-webhook.js\"",
     "docker:up": "docker compose -f docker-compose.v2.yml up -d --build",
     "docker:down": "docker compose -f docker-compose.v2.yml down",
     "docker:logs": "docker compose -f docker-compose.v2.yml logs -f",
@@ -13,7 +13,13 @@
     "docker:v2:down": "docker compose -f docker-compose.v2.yml down",
     "docker:v2:logs": "docker compose -f docker-compose.v2.yml logs -f",
     "docker:prod:up": "docker compose -f docker-compose.prod.yml up -d",
-    "docker:prod:down": "docker compose -f docker-compose.prod.yml down"
+    "docker:prod:down": "docker compose -f docker-compose.prod.yml down",
+    "webhook": "node tools/mock-n8n-webhook.js",
+    "test:unit": "npm --prefix front-end run test:unit",
+    "test:integration": "npm --prefix front-end run test:integration",
+    "test:ai-agent": "node --test tools/tests/mock-n8n-webhook.integration.test.mjs",
+    "test:load": "node tools/load/chat-webhook.load.mjs",
+    "test": "npm run test:unit && npm run test:integration && npm run test:ai-agent"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

@@ -11,6 +11,8 @@ Khách hỏi (Front-end)
         ↓
    AI Agent
         ↓
+      Nhận context catalog từ front-end
+        ↓
   Call Tools (Search, Compare, Details)
         ↓
   Product API → Lấy dữ liệu
@@ -30,21 +32,17 @@ Trả về Front-end + Hiển thị
 
 ### 2. Cấu Hình Credentials
 
-API key chỉ nên lưu trong n8n Credentials, không đặt trong front-end.
-
-Nếu bạn dùng key Google Gemini như key đã gửi cho tôi:
-
+**OpenAI API:**
 ```
 1. Vào Credentials
-2. New → Google Gemini / Google Generative AI
-3. Dán API key vào credential `googlePalmApi` của n8n
+2. New → OpenAI
+3. Paste API key từ https://platform.openai.com/api-keys
 ```
 
-Nếu bạn dùng provider khác, tạo credential tương ứng trong n8n:
-- OpenAI
-- Anthropic Claude
-- Groq
-- Ollama/local model
+Hoặc dùng model khác:
+- Anthropic Claude: Tương tự, lấy key từ claude.ai
+- Google Gemini: Key từ ai.google.dev
+- Llama (local): Không cần key
 
 ### 3. Cấu Hình API Integration
 
@@ -56,9 +54,13 @@ const productApi = $env.PRODUCT_API_URL || 'http://localhost:3002';
 return { productApi };
 ```
 
-Front-end đã đọc webhook từ `VITE_N8N_CHAT_WEBHOOK_URL`. Nếu không set biến này, app sẽ tự dùng `http://localhost:5678/webhook/laptop-chat`.
+RAG endpoint có sẵn trong catalog service:
 
-Workflow mẫu trong `docs/n8n-ai-agent-workflow.json` đã nối sẵn `AI Agent` với `Connect Gemini` qua `ai_languageModel`, nên bạn chỉ cần import file đó và chọn lại credential Google của mình.
+```bash
+GET /products/rag/context?q=<user_question>&k=8
+```
+
+Trong n8n, bạn có thể dùng HTTP Request node để gọi endpoint này trước AI node, sau đó đưa `relevantProducts` vào prompt.
 
 ### 4. Test Webhook
 
@@ -67,7 +69,11 @@ curl -X POST http://localhost:5678/webhook/laptop-chat \
   -H "Content-Type: application/json" \
   -d '{
     "message": "1000000 mua được laptop gì?",
-    "history": []
+    "history": [],
+    "context": {
+      "totalProducts": 120,
+      "relevantProducts": []
+    }
   }'
 ```
 
@@ -87,8 +93,6 @@ File `.env.local` hoặc `.env.production`:
 ```bash
 VITE_N8N_CHAT_WEBHOOK_URL=https://your-n8n-instance.com/webhook/laptop-chat
 ```
-
-Nếu chạy local n8n, bạn có thể để mặc định `http://localhost:5678/webhook/laptop-chat`.
 
 ### 2. Restart Dev Server
 

@@ -54,21 +54,27 @@ function Login() {
             <div className="field">
               <span className="person"> </span>
               <input
+                id="email"
+                name="email"
                 type="text"
                 required
                 placeholder="Email hoặc tên đăng nhập"
                 onChange={(event) => setEmail(event.target.value)}
+                autoComplete="email"
               ></input>
             </div>
             <h4 className="fieldHeader space">Mật khẩu</h4>
             <div className="field space">
               <span className="password"></span>
               <input
+                id="password"
+                name="password"
                 type="password"
                 className="pass-key"
                 required
                 placeholder="Mật khẩu"
                 onChange={(event) => setPassword(event.target.value)}
+                autoComplete="current-password"
               ></input>
               <span className="show">HIỆN</span>
             </div>
