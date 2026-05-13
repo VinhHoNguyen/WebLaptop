@@ -2,6 +2,7 @@ import { Fragment, useState } from "react";
 import "../Style/Login.css";
 import { API_BASE_URLS } from "../config/api";
 import { decodeJwt } from "../utils/auth";
+import CartsLocal from "../utils/cartLocal";
 function Login() {
 
 
@@ -30,6 +31,12 @@ function Login() {
           if (payload.user.id) {
             sessionStorage.setItem("id_user", payload.user.id);
           }
+        }
+
+        try {
+          await CartsLocal.syncWithServer();
+        } catch (syncError) {
+          console.error("Failed to sync cart after login", syncError);
         }
 
         window.location.href = "/";

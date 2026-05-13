@@ -8,7 +8,7 @@
     "stock": 18,
     "description": "14-inch ultrabook with 2.5K display, aluminum chassis, and 12-hour battery life for daily productivity and travel.",
     "category": "Ultrabook",
-    "image": "https://placehold.co/600x800?text=ApexBook+14+Air",
+    "image": "https://cdnv2.tgdd.vn/mwg-static/dmx/Products/Images/44/321468/asus-zenbook-14-oled-ux3405ma-ultra-7-pp152w-thumb-638763543290373422-600x600.jpg",
     "specs": {
       "brand": "Apex",
       "cpu": "Intel Core i5-1340P",
@@ -27,7 +27,7 @@
     "stock": 6,
     "description": "16-inch gaming laptop with high-refresh display, dedicated GPU, and advanced cooling for sustained performance.",
     "category": "Gaming",
-    "image": "https://placehold.co/600x800?text=Titan+Pro+16",
+    "image": "https://cdnv2.tgdd.vn/mwg-static/tgdd/Products/Images/44/333095/asus-rog-strix-g16-g614jv-i7-n3515w-170225-114616-616-600x600.jpg",
     "specs": {
       "brand": "Titan",
       "cpu": "Intel Core i7-14650HX",
@@ -46,7 +46,7 @@
     "stock": 9,
     "description": "Creator laptop with color-accurate panel, fast SSD, and strong multicore CPU for design and editing workloads.",
     "category": "Creator",
-    "image": "https://placehold.co/600x800?text=Nova+Studio+15",
+    "image": "https://cdn.tgdd.vn/Products/Images/44/255615/asus-vivobook-pro-15-oled-k3500pc-i7-l1046t-021121-035044-600x600.jpg",
     "specs": {
       "brand": "Nova",
       "cpu": "Intel Core i7-13700H",
@@ -65,7 +65,7 @@
     "stock": 14,
     "description": "Business-class 14-inch laptop with TPM security, long battery life, and a full set of ports.",
     "category": "Business",
-    "image": "https://placehold.co/600x800?text=Stride+Business+14",
+    "image": "https://cdn.tgdd.vn/Products/Images/44/236960/lenovo-thinkbook-14-g2-itl-i5-20vd003kvn-600x600.jpg",
     "specs": {
       "brand": "Stride",
       "cpu": "Intel Core i5-1335U",
@@ -84,7 +84,7 @@
     "stock": 10,
     "description": "Convertible 13-inch laptop with 360-degree hinge, stylus support, and lightweight design.",
     "category": "2-in-1",
-    "image": "https://placehold.co/600x800?text=FlexGo+13+2-in-1",
+    "image": "https://cdnv2.tgdd.vn/mwg-static/tgdd/Products/Images/44/338208/hp-envy-x360-14-fa0047au-r7-a19bppa-thumb-638833332894402249-600x600.jpg",
     "specs": {
       "brand": "FlexGo",
       "cpu": "Intel Core i5-1330U",
@@ -103,7 +103,7 @@
     "stock": 25,
     "description": "Affordable 15-inch laptop for students with reliable performance for study, browsing, and streaming.",
     "category": "Student",
-    "image": "https://placehold.co/600x800?text=Campus+Lite+15",
+    "image": "https://cdnv2.tgdd.vn/mwg-static/tgdd/Products/Images/44/304543/acer-aspire-3-a315-59-5283-i5-nxk6tsv00b-thumb-638754896181678129-600x600.jpg",
     "specs": {
       "brand": "Campus",
       "cpu": "Intel Core i3-1215U",
@@ -122,7 +122,7 @@
     "stock": 4,
     "description": "17-inch gaming machine with high-end GPU, mechanical-style keyboard, and aggressive thermal headroom.",
     "category": "Gaming",
-    "image": "https://placehold.co/600x800?text=Vortex+RTX+17",
+    "image": "https://cdn.tgdd.vn/Products/Images/44/305663/asus-gaming-rog-strix-g16-g614ji-i7-n4084w-thumb-1-600x600.jpg",
     "specs": {
       "brand": "Vortex",
       "cpu": "AMD Ryzen 9 7940HX",
@@ -141,7 +141,7 @@
     "stock": 11,
     "description": "Compact 13-inch ultrabook with OLED panel and fast charging for on-the-go workflows.",
     "category": "Ultrabook",
-    "image": "https://placehold.co/600x800?text=ZenBooker+13",
+    "image": "https://cdnv2.tgdd.vn/mwg-static/tgdd/Products/Images/44/338279/lenovo-ideapad-slim-5-oled-15arp10-r7-83j3002svn-thumb-638851465607267025-600x600.jpg",
     "specs": {
       "brand": "ZenBooker",
       "cpu": "Intel Core i7-1360P",
@@ -160,7 +160,7 @@
     "stock": 5,
     "description": "Mobile workstation with ECC-capable memory support and ISV-certified graphics for pro apps.",
     "category": "Workstation",
-    "image": "https://placehold.co/600x800?text=Quanta+Workstation+16",
+    "image": "https://cdn.tgdd.vn/Products/Images/44/264438/hp-zbook-firefly-14-g8-i5-275v5av-141221-042207-600x600.jpg",
     "specs": {
       "brand": "Quanta",
       "cpu": "Intel Core i7-13850HX",
@@ -179,7 +179,7 @@
     "stock": 20,
     "description": "Everyday 14-inch laptop with quiet cooling, solid battery, and a bright matte display.",
     "category": "Everyday",
-    "image": "https://placehold.co/600x800?text=Pulse+Slim+14",
+    "image": "https://cdn.tgdd.vn/Products/Images/44/232192/lenovo-ideapad-slim-5-15itl05-i5-82fg001pvn-144320-064322-600x600.jpg",
     "specs": {
       "brand": "Pulse",
       "cpu": "AMD Ryzen 5 7530U",
@@ -198,7 +198,7 @@
     "stock": 7,
     "description": "High-performance creator laptop with 100% DCI-P3 panel and fast PCIe 4.0 storage.",
     "category": "Creator",
-    "image": "https://placehold.co/600x800?text=Creator+X15",
+    "image": "https://cdn.tgdd.vn/Products/Images/44/264943/asus-vivobook-pro-14x-oled-m7400qc-r5-m01810-thumb-600x600.jpg",
     "specs": {
       "brand": "Creator",
       "cpu": "Intel Core i9-13900H",
@@ -217,7 +217,7 @@
     "stock": 13,
     "description": "Reliable 15-inch business laptop with numeric keypad and durable hinge design.",
     "category": "Business",
-    "image": "https://placehold.co/600x800?text=OfficeMate+15",
+    "image": "https://cdn.tgdd.vn/Products/Images/44/291154/hp-probook-450-g9-i5-6m0y9pa-thumb-1-600x600.jpg",
     "specs": {
       "brand": "OfficeMate",
       "cpu": "Intel Core i5-1235U",
@@ -236,7 +236,7 @@
     "stock": 15,
     "description": "Thin-and-light laptop with fast boot, Wi-Fi 6, and a quiet fan profile.",
     "category": "Ultrabook",
-    "image": "https://placehold.co/600x800?text=SwiftBook+14",
+    "image": "https://cdnv2.tgdd.vn/mwg-static/tgdd/Products/Images/44/338279/lenovo-ideapad-slim-5-oled-15arp10-r7-83j3002svn-thumb-638851465607267025-600x600.jpg",
     "specs": {
       "brand": "SwiftBook",
       "cpu": "AMD Ryzen 7 7730U",
@@ -255,7 +255,7 @@
     "stock": 8,
     "description": "Gaming laptop with high-refresh QHD display, per-key RGB, and fast 1TB SSD.",
     "category": "Gaming",
-    "image": "https://placehold.co/600x800?text=Legion+Edge+16",
+    "image": "https://cdnv2.tgdd.vn/mwg-static/tgdd/Products/Images/44/326497/lenovo-legion-pro-5-16irx9-i9-83df0047vn-070525-115201-217-600x600.jpg",
     "specs": {
       "brand": "Legion",
       "cpu": "Intel Core i7-14650HX",
@@ -274,7 +274,7 @@
     "stock": 6,
     "description": "Creator-focused 16-inch laptop with high brightness display and extra I/O for docks.",
     "category": "Creator",
-    "image": "https://placehold.co/600x800?text=StudioBook+16+Pro",
+    "image": "https://cdn.tgdd.vn/Products/Images/44/274243/asus-vivobook-pro-16x-oled-m7600qc-r5-l2077w-110322-113431-600x600.jpg",
     "specs": {
       "brand": "StudioBook",
       "cpu": "AMD Ryzen 9 7945HX",
@@ -293,7 +293,7 @@
     "stock": 9,
     "description": "2-in-1 laptop with pen support, 10-point touch, and premium audio.",
     "category": "2-in-1",
-    "image": "https://placehold.co/600x800?text=FoldPad+14",
+    "image": "https://cdnv2.tgdd.vn/mwg-static/tgdd/Products/Images/44/338208/hp-envy-x360-14-fa0047au-r7-a19bppa-thumb-638833332894402249-600x600.jpg",
     "specs": {
       "brand": "FoldPad",
       "cpu": "Intel Core i7-1355U",

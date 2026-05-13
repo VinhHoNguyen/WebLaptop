@@ -25,7 +25,7 @@ const getCartProducts = async (req, res) => {
         let total = 0;
 
         cartProducts.forEach((cartProduct) => {
-            const productId = String(cartProduct.ProductId);
+            const productId = String(cartProduct.productId);
             const quantity = normalizeCount(cartProduct.quantity);
             cartProductIds.push(productId);
             quantityById.set(productId, (quantityById.get(productId) || 0) + quantity);

@@ -1,4 +1,5 @@
 import CartAPI, { CartItemPayload } from "../api/CartAPI";
+import { ensureUserSession } from "./auth";
 
 export type LocalCartItem = {
   id_cart: string;
@@ -11,6 +12,7 @@ export type LocalCartItem = {
 };
 
 export const getCartKey = () => {
+  ensureUserSession();
   const userId = sessionStorage.getItem("id_user");
   return userId ? `carts_${userId}` : "carts_guest";
 };
@@ -63,7 +65,16 @@ const saveCartToStorage = (items: LocalCartItem[]) => {
 const readCartFromStorage = (): LocalCartItem[] => {
   const cartKey = getCartKey();
   const raw = localStorage.getItem(cartKey);
-  return raw ? (JSON.parse(raw) as LocalCartItem[]) : [];
+  if (raw) {
+    return JSON.parse(raw) as LocalCartItem[];
+  }
+
+  if (cartKey !== "carts_guest") {
+    const guestRaw = localStorage.getItem("carts_guest");
+    return guestRaw ? (JSON.parse(guestRaw) as LocalCartItem[]) : [];
+  }
+
+  return [];
 };
 
 const CartsLocal = {
@@ -92,7 +103,7 @@ const CartsLocal = {
       return localCart;
     } catch (error) {
       console.error("Error syncing cart:", error);
-      return [] as LocalCartItem[];
+      return readCartFromStorage();
     }
   },
 
@@ -131,6 +142,10 @@ const CartsLocal = {
         const serverCart = await CartsLocal.fetchFromServer();
         return serverCart;
       } catch (error) {
+        const status = (error as { response?: { status?: number } })?.response?.status;
+        if (status === 401) {
+          localStorage.removeItem("token");
+        }
         console.error("Error adding to cart:", error);
       }
     }

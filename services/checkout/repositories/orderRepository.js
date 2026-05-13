@@ -80,6 +80,13 @@ const getOrderById = async (id) => {
   return normalizeOrder(rows[0]);
 };
 
+const getAllOrders = async () => {
+  const [rows] = await pool.query(
+    `SELECT * FROM orders ORDER BY create_time DESC, createdAt DESC`
+  );
+  return rows.map(normalizeOrder);
+};
+
 const getOrderDetailsByOrderId = async (idOrder) => {
   const [rows] = await pool.query(
     `SELECT * FROM order_details WHERE id_order = ? ORDER BY createdAt DESC`,
@@ -108,10 +115,18 @@ const createDetailOrder = async (payload) => {
   return normalizeDetailOrder(rows[0]);
 };
 
+const updateOrderStatus = async (id, status) => {
+  await pool.query(`UPDATE orders SET status = ? WHERE id = ?`, [status, id]);
+  const [rows] = await pool.query(`SELECT * FROM orders WHERE id = ? LIMIT 1`, [id]);
+  return normalizeOrder(rows[0]);
+};
+
 module.exports = {
   createOrder,
   getOrdersByUserId,
   getOrderById,
+  getAllOrders,
+  updateOrderStatus,
   getOrderDetailsByOrderId,
   createDetailOrder,
 };

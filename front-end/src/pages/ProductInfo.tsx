@@ -3,6 +3,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { API_BASE_URLS } from "../config/api";
 import { formatVnd } from "../utils/currency";
+import CartsLocal, { type LocalCartItem } from "../utils/cartLocal";
 
 type ProductDetails = {
   image?: string;
@@ -47,39 +48,36 @@ function ProductInfo() {
     fetchData();
   }, []);
 
-  const onSubmithandler = () => {
+  const onSubmithandler = async () => {
     const stockValue = Number.isFinite(Number(inputValue.stock)) ? Number(inputValue.stock) : null;
     if (stockValue !== null && stockValue <= 0) {
       alert("Sản phẩm đã hết hàng");
       return;
     }
 
-    const token = localStorage.getItem("token");
-    if (token) {
-      console.log("Add to cart");
-      fetch(`${API_BASE_URLS.cart}/cart/${productID}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      })
-        .then((response) => {
-          if (response.ok) {
-            console.log("Added to cart");
-            alert("Đã thêm vào giỏ hàng");
-          } else {
-            console.log("Failed to add to cart");
-            window.location.href = "/login";
-          }
-        })
-        .catch((error) => {
-          console.error("Error:", error);
-        });
+    const productId = String(productID || inputValue._id || inputValue.id || "").trim();
+    if (!productId) {
+      alert("Không thể thêm sản phẩm này vào giỏ hàng");
+      return;
     }
 
-  
+    const cartItem: LocalCartItem = {
+      id_cart: Date.now().toString(),
+      id_product: productId,
+      name_product: inputValue.name || "",
+      price_product: Number(inputValue.price ?? 0),
+      count: 1,
+      image: inputValue.image,
+      size: "default",
+    };
 
+    try {
+      await CartsLocal.addProduct(cartItem);
+      alert("Đã thêm vào giỏ hàng");
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Không thể thêm vào giỏ hàng");
+    }
   };
 
   const stockValue = Number.isFinite(Number(inputValue.stock)) ? Number(inputValue.stock) : null;

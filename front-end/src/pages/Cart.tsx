@@ -3,6 +3,8 @@ import { Fragment, useEffect, useState } from "react";
 import "../Style/Cart.css";
 import { API_BASE_URLS } from "../config/api";
 import { formatVnd } from "../utils/currency";
+import { getCartKey, type LocalCartItem } from "../utils/cartLocal";
+import { ensureUserSession } from "../utils/auth";
 function Cart() {
 
   const [cartData, setCartData] = useState<{ total: number; products: any[] }>({ total: 0, products: [] });
@@ -10,12 +12,22 @@ function Cart() {
   useEffect(() => {
     const fetchCartData = async () => {
       try {
+        ensureUserSession();
         const token = localStorage.getItem("token");
 
-        // Check if token exists
+        const loadLocalCart = () => {
+          const cartKey = getCartKey();
+          const cached = localStorage.getItem(cartKey);
+          const localItems = cached ? (JSON.parse(cached) as LocalCartItem[]) : [];
+          const total = localItems.reduce(
+            (sum, item) => sum + Number(item.price_product || 0) * Number(item.count || 0),
+            0
+          );
+          setCartData({ total, products: localItems });
+        };
+
         if (!token) {
-          window.location.href = "/login";
-          console.log("Token not found");
+          loadLocalCart();
           return;
         }
 
@@ -43,13 +55,26 @@ function Cart() {
           // Check if token is invalid (e.g., expired or unauthorized)
           if (response.status === 401) {
             console.log("Invalid token");
-            // Handle invalid token scenario (e.g., redirect to login page)
+            localStorage.removeItem("token");
+            loadLocalCart();
           } else {
             console.log("Failed to fetch cart data");
+            loadLocalCart();
           }
         }
       } catch (error) {
         console.error("Error:", error);
+        const token = localStorage.getItem("token");
+        if (!token) {
+          const cartKey = getCartKey();
+          const cached = localStorage.getItem(cartKey);
+          const localItems = cached ? (JSON.parse(cached) as LocalCartItem[]) : [];
+          const total = localItems.reduce(
+            (sum, item) => sum + Number(item.price_product || 0) * Number(item.count || 0),
+            0
+          );
+          setCartData({ total, products: localItems });
+        }
       }
     };
 
@@ -84,17 +109,25 @@ function Cart() {
                   </thead>
                   <tbody>
                     
-                  {cartData.products.map((product: any) => (
-                    <tr className="cart-table-content" key={product._id}>
+                  {cartData.products.map((product: any) => {
+                    const name = product.name ?? product.name_product ?? "";
+                    const image = product.image ?? product.img1 ?? product.thumbnail ?? "";
+                    const category = product.category ?? "-";
+                    const count = product.count ?? product.quantity ?? 1;
+                    const price = Number(product.price ?? product.price_product ?? 0);
+                    const key = product._id || product.id_cart || product.id_product;
+                    return (
+                    <tr className="cart-table-content" key={key}>
                       <td className="cart-table-image-info">
-                        <img src={product.image} alt="Hình ảnh sản phẩm"/>
+                        <img src={image} alt="Hình ảnh sản phẩm"/>
                       </td>
-                      <td className="bold-text">{product.name}</td>
-                      <td>{product.category}</td>
-                      <td className="cart-table-qty">{product.count ?? 1}</td>
-                      <td>{formatVnd(product.price)}</td>
+                      <td className="bold-text">{name}</td>
+                      <td>{category}</td>
+                      <td className="cart-table-qty">{count}</td>
+                      <td>{formatVnd(price)}</td>
                     </tr>
-                  ))}
+                    );
+                  })}
 
                   </tbody>
                 </table>

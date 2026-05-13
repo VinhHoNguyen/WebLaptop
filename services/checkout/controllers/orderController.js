@@ -2,6 +2,8 @@ const {
     createOrder,
     getOrdersByUserId,
     getOrderById,
+    getAllOrders,
+    updateOrderStatus,
 } = require('../repositories/orderRepository')
 const { sendSuccess, sendError } = require('../utils/response')
 const logger = require('../utils/logger')
@@ -43,15 +45,7 @@ module.exports.get_order = async (req, res) => {
     try {
         const id_user = req.params.id || req.query.userId
 
-        if (!id_user) {
-            return sendError(res, req, {
-                status: 400,
-                message: 'userId is required',
-                errorCode: 'VALIDATION_ERROR',
-            })
-        }
-
-        const order = await getOrdersByUserId(id_user)
+        const order = id_user ? await getOrdersByUserId(id_user) : await getAllOrders()
 
         return sendSuccess(res, req, {
             data: order,
@@ -95,6 +89,42 @@ module.exports.get_detail = async (req, res) => {
     }
 
 
+}
+
+module.exports.update_order_status = async (req, res) => {
+    try {
+        const { id } = req.params
+        const { status } = req.body
+
+        const ALLOWED_STATUSES = ['Pending', 'Processing', 'Shipped', 'Completed', 'Cancelled']
+        if (!status || !ALLOWED_STATUSES.includes(status)) {
+            return sendError(res, req, {
+                status: 400,
+                message: `Status must be one of: ${ALLOWED_STATUSES.join(', ')}`,
+                errorCode: 'INVALID_STATUS',
+            })
+        }
+
+        const order = await updateOrderStatus(id, status)
+        if (!order) {
+            return sendError(res, req, {
+                status: 404,
+                message: 'Order not found',
+                errorCode: 'ORDER_NOT_FOUND',
+            })
+        }
+
+        return sendSuccess(res, req, {
+            data: order,
+            message: 'Order status updated',
+        })
+    } catch (error) {
+        return sendError(res, req, {
+            status: 500,
+            message: 'Failed to update order status',
+            errorCode: 'ORDER_UPDATE_FAILED',
+        })
+    }
 }
 
 module.exports.create_momo_payment = async (req, res) => {

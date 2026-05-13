@@ -129,6 +129,7 @@ services:
       args:
         VITE_USER_API_URL: ${VITE_USER_API_URL:-http://localhost:3001}
         VITE_PRODUCT_API_URL: ${VITE_PRODUCT_API_URL:-http://localhost:3002}
+        VITE_CHECKOUT_API_URL: ${VITE_CHECKOUT_API_URL:-http://localhost:3004}
     container_name: webgame-admin-portal
     restart: unless-stopped
     ports:

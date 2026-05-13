@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { API_BASE_URLS, fetchJson } from "./config/api";
 
-type AdminPage = "dashboard" | "products" | "users";
+type AdminPage = "dashboard" | "products" | "users" | "orders";
 
 type AdminUser = {
   id: string;
@@ -103,6 +103,30 @@ type OrderRow = {
   customer: string;
   status: OrderStatus;
   amount: number;
+};
+
+type AdminOrderRow = {
+  id: string;
+  id_user: string | null;
+  id_payment: string | null;
+  address: string | null;
+  total: number;
+  status: string;
+  pay: boolean;
+  feeship: number;
+  id_coupon: string | null;
+  create_time: string | null;
+  createdAt: string | null;
+};
+
+type AdminOrderDetailItem = {
+  id: string;
+  id_order: string;
+  id_product: string | null;
+  name_product: string | null;
+  price_product: string | null;
+  count: number;
+  size: string | null;
 };
 
 const ADMIN_SESSION_KEY = "admin_session";
@@ -281,6 +305,8 @@ function App() {
   const [totalProducts, setTotalProducts] = useState(0);
   const [users, setUsers] = useState<UserRow[]>([]);
   const [totalUsers, setTotalUsers] = useState(0);
+  const [ordersData, setOrdersData] = useState<AdminOrderRow[]>([]);
+  const [totalOrders, setTotalOrders] = useState(0);
   const [adminSession, setAdminSession] = useState<AdminSession | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
 
@@ -348,6 +374,18 @@ function App() {
 
     if (page === "users") {
       fetchUsers();
+    }
+  }, [adminSession, page]);
+
+  useEffect(() => {
+    if (!adminSession) {
+      setOrdersData([]);
+      setTotalOrders(0);
+      return;
+    }
+
+    if (page === "orders") {
+      fetchOrdersData();
     }
   }, [adminSession, page]);
 
@@ -426,6 +464,64 @@ function App() {
     } catch (error) {
       console.error("Không thể tải danh sách người dùng:", error);
     }
+  };
+
+  const fetchOrdersData = async () => {
+    try {
+      const payload = await fetchJson<any>(`${API_BASE_URLS.checkout}/api/Payment/orders`);
+      const data = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.data)
+          ? payload.data
+          : [];
+
+      const normalized = data.map((item: any): AdminOrderRow => ({
+        id: item.id || "",
+        id_user: item.id_user ?? null,
+        id_payment: item.id_payment ?? null,
+        address: item.address ?? null,
+        total: Number(item.total || 0),
+        status: item.status || "Pending",
+        pay: Boolean(item.pay),
+        feeship: Number(item.feeship || 0),
+        id_coupon: item.id_coupon ?? null,
+        create_time: item.create_time ?? null,
+        createdAt: item.createdAt ?? null,
+      }));
+
+      setOrdersData(normalized);
+      setTotalOrders(normalized.length);
+    } catch (error) {
+      console.error("Không thể tải danh sách đơn hàng:", error);
+    }
+  };
+
+  const fetchOrderDetails = async (orderId: string): Promise<AdminOrderDetailItem[]> => {
+    const payload = await fetchJson<any>(`${API_BASE_URLS.checkout}/api/DetailOrder/${orderId}`);
+    const data = Array.isArray(payload)
+      ? payload
+      : Array.isArray(payload?.data)
+        ? payload.data
+        : [];
+
+    return data.map((item: any): AdminOrderDetailItem => ({
+      id: item.id || "",
+      id_order: item.id_order || "",
+      id_product: item.id_product ?? null,
+      name_product: item.name_product ?? null,
+      price_product: item.price_product ?? null,
+      count: Number(item.count || 0),
+      size: item.size ?? null,
+    }));
+  };
+
+  const updateOrderStatus = async (orderId: string, status: string) => {
+    await fetchJson(`${API_BASE_URLS.checkout}/api/Payment/orders/${orderId}/status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    await fetchOrdersData();
   };
 
   const createProduct = async (input: CreateProductInput) => {
@@ -557,12 +653,9 @@ function App() {
   };
 
   const pageTitle = useMemo(() => {
-    if (page === "dashboard") {
-      return "Chào mừng, quản trị viên!";
-    }
-    if (page === "users") {
-      return "Người dùng";
-    }
+    if (page === "dashboard") return "Chào mừng, quản trị viên!";
+    if (page === "users") return "Người dùng";
+    if (page === "orders") return "Đơn hàng";
     return "Sản phẩm";
   }, [page]);
 
@@ -607,7 +700,7 @@ function App() {
           <button className={page === "users" ? "menu-item active" : "menu-item"} onClick={() => setPage("users")}>
             Người dùng
           </button>
-          <button className="menu-item" disabled>
+          <button className={page === "orders" ? "menu-item active" : "menu-item"} onClick={() => setPage("orders")}>
             Đơn hàng
           </button>
           <button className="menu-item" disabled>
@@ -639,6 +732,13 @@ function App() {
             onCreateUser={createUser}
             onUpdateUser={updateUser}
             onDeleteUser={deleteUser}
+          />
+        ) : page === "orders" ? (
+          <OrdersView
+            rows={ordersData}
+            total={totalOrders}
+            onUpdateStatus={updateOrderStatus}
+            onFetchDetails={fetchOrderDetails}
           />
         ) : (
           <ProductsView
@@ -1572,6 +1672,276 @@ function UsersView({
           <button className="page-item">3</button>
           <button className="page-item">4</button>
         </div>
+      </article>
+    </section>
+  );
+}
+
+const ORDER_STATUS_OPTIONS = ["Pending", "Processing", "Shipped", "Completed", "Cancelled"];
+
+const ORDER_STATUS_DISPLAY: Record<string, string> = {
+  pending: "Chờ xử lý",
+  processing: "Đang xử lý",
+  shipped: "Đang giao",
+  completed: "Hoàn tất",
+  cancelled: "Đã hủy",
+};
+
+const formatOrderStatus = (status: string) =>
+  ORDER_STATUS_DISPLAY[status.toLowerCase()] ?? status;
+
+const formatDateTime = (value: string | null) => {
+  if (!value) return "-";
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return value;
+  return d.toLocaleString("vi-VN");
+};
+
+function OrdersView({
+  rows,
+  total,
+  onUpdateStatus,
+  onFetchDetails,
+}: {
+  rows: AdminOrderRow[];
+  total: number;
+  onUpdateStatus: (id: string, status: string) => Promise<void>;
+  onFetchDetails: (orderId: string) => Promise<AdminOrderDetailItem[]>;
+}) {
+  const [query, setQuery] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("all");
+  const [detailOrder, setDetailOrder] = useState<AdminOrderRow | null>(null);
+  const [detailItems, setDetailItems] = useState<AdminOrderDetailItem[]>([]);
+  const [isDetailLoading, setIsDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState("");
+  const [newStatus, setNewStatus] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [updateError, setUpdateError] = useState("");
+
+  const filteredRows = useMemo(() => {
+    const keyword = query.trim().toLowerCase();
+    return rows.filter((row) => {
+      if (selectedStatus !== "all" && row.status.toLowerCase() !== selectedStatus.toLowerCase()) {
+        return false;
+      }
+      if (!keyword) return true;
+      return (
+        row.id.toLowerCase().includes(keyword) ||
+        (row.address ?? "").toLowerCase().includes(keyword) ||
+        (row.id_user ?? "").toLowerCase().includes(keyword)
+      );
+    });
+  }, [rows, query, selectedStatus]);
+
+  const openDetail = async (order: AdminOrderRow) => {
+    setDetailOrder(order);
+    setNewStatus(order.status);
+    setDetailItems([]);
+    setDetailError("");
+    setUpdateError("");
+    setIsDetailLoading(true);
+    try {
+      const items = await onFetchDetails(order.id);
+      setDetailItems(items);
+    } catch (_err) {
+      setDetailError("Không thể tải chi tiết đơn hàng.");
+    } finally {
+      setIsDetailLoading(false);
+    }
+  };
+
+  const closeDetail = () => {
+    setDetailOrder(null);
+    setDetailItems([]);
+    setDetailError("");
+    setUpdateError("");
+    setIsUpdating(false);
+  };
+
+  const handleStatusUpdate = async () => {
+    if (!detailOrder || newStatus === detailOrder.status) return;
+    setUpdateError("");
+    setIsUpdating(true);
+    try {
+      await onUpdateStatus(detailOrder.id, newStatus);
+      setDetailOrder((prev) => prev ? { ...prev, status: newStatus } : prev);
+    } catch (err) {
+      setUpdateError(err instanceof Error ? err.message : "Cập nhật thất bại.");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  return (
+    <section className="users-page">
+      <div className="panel search-wrap">
+        <h2>Đơn hàng</h2>
+        <input
+          placeholder="Tìm theo mã đơn, địa chỉ, ID người dùng..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
+
+      <div className="panel toolbar">
+        <div className="toolbar-left">
+          <select value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value)}>
+            <option value="all">Tất cả trạng thái</option>
+            {ORDER_STATUS_OPTIONS.map((s) => (
+              <option key={s} value={s}>
+                {formatOrderStatus(s)}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {detailOrder && (
+        <div className="modal-backdrop" role="presentation" onClick={closeDetail}>
+          <div className="panel modal" role="dialog" aria-modal="true" style={{ maxWidth: 640 }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Chi tiết đơn hàng #{detailOrder.id.slice(-8)}</h3>
+              <button className="icon-button" type="button" onClick={closeDetail} aria-label="Đóng">×</button>
+            </div>
+
+            <div className="form-grid" style={{ marginBottom: 16 }}>
+              <div className="form-field">
+                <span>Mã đơn</span>
+                <div style={{ padding: "6px 0", fontSize: 13, fontFamily: "monospace" }}>{detailOrder.id}</div>
+              </div>
+              <div className="form-field">
+                <span>Ngày đặt</span>
+                <div style={{ padding: "6px 0", fontSize: 13 }}>{formatDateTime(detailOrder.create_time)}</div>
+              </div>
+              <div className="form-field form-field-wide">
+                <span>Địa chỉ giao hàng</span>
+                <div style={{ padding: "6px 0", fontSize: 13 }}>{detailOrder.address || "-"}</div>
+              </div>
+              <div className="form-field">
+                <span>Tổng tiền hàng</span>
+                <div style={{ padding: "6px 0", fontSize: 13 }}>{formatCurrency(detailOrder.total)}</div>
+              </div>
+              <div className="form-field">
+                <span>Phí vận chuyển</span>
+                <div style={{ padding: "6px 0", fontSize: 13 }}>{formatCurrency(detailOrder.feeship)}</div>
+              </div>
+              <div className="form-field">
+                <span>Thanh toán</span>
+                <div style={{ padding: "6px 0", fontSize: 13 }}>{detailOrder.pay ? "Đã thanh toán" : "Chưa thanh toán"}</div>
+              </div>
+              {detailOrder.id_coupon && (
+                <div className="form-field">
+                  <span>Mã giảm giá</span>
+                  <div style={{ padding: "6px 0", fontSize: 13 }}>{detailOrder.id_coupon}</div>
+                </div>
+              )}
+            </div>
+
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontWeight: 600, marginBottom: 8 }}>Sản phẩm</div>
+              {isDetailLoading ? (
+                <div style={{ color: "#888", fontSize: 13 }}>Đang tải...</div>
+              ) : detailError ? (
+                <div className="form-error">{detailError}</div>
+              ) : detailItems.length === 0 ? (
+                <div style={{ color: "#888", fontSize: 13 }}>Không có sản phẩm.</div>
+              ) : (
+                <table className="simple-table">
+                  <thead>
+                    <tr>
+                      <th>Tên sản phẩm</th>
+                      <th>Size</th>
+                      <th>SL</th>
+                      <th>Đơn giá</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {detailItems.map((item) => (
+                      <tr key={item.id}>
+                        <td>{item.name_product || "-"}</td>
+                        <td>{item.size || "-"}</td>
+                        <td>{item.count}</td>
+                        <td>{item.price_product ? formatCurrency(Number(item.price_product)) : "-"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <span style={{ fontWeight: 600 }}>Cập nhật trạng thái:</span>
+              <select value={newStatus} onChange={(e) => setNewStatus(e.target.value)}>
+                {ORDER_STATUS_OPTIONS.map((s) => (
+                  <option key={s} value={s}>{formatOrderStatus(s)}</option>
+                ))}
+              </select>
+              <button
+                className="btn-primary"
+                type="button"
+                onClick={handleStatusUpdate}
+                disabled={isUpdating || newStatus === detailOrder.status}
+              >
+                {isUpdating ? "Đang lưu..." : "Lưu"}
+              </button>
+            </div>
+            {updateError && <div className="form-error" style={{ marginTop: 8 }}>{updateError}</div>}
+          </div>
+        </div>
+      )}
+
+      <article className="panel products-table-wrap">
+        <div className="table-title">Hiển thị {filteredRows.length} / {total} đơn hàng</div>
+        <table className="products-table">
+          <thead>
+            <tr>
+              <th>Mã đơn</th>
+              <th>Người dùng</th>
+              <th>Địa chỉ</th>
+              <th>Tổng tiền</th>
+              <th>Trạng thái</th>
+              <th>Thanh toán</th>
+              <th>Ngày đặt</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredRows.map((row) => {
+              const statusClass = row.status.toLowerCase();
+              return (
+                <tr key={row.id}>
+                  <td style={{ fontFamily: "monospace", fontSize: 12 }}>#{row.id.slice(-8)}</td>
+                  <td style={{ fontSize: 12 }}>{row.id_user ? row.id_user.slice(-8) : "-"}</td>
+                  <td style={{ maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {row.address || "-"}
+                  </td>
+                  <td>{formatCurrency(row.total)}</td>
+                  <td>
+                    <span className={`pill ${statusClass}`}>{formatOrderStatus(row.status)}</span>
+                  </td>
+                  <td>
+                    <span className={`pill ${row.pay ? "active" : "inactive"}`}>
+                      {row.pay ? "Đã thanh toán" : "Chưa TT"}
+                    </span>
+                  </td>
+                  <td style={{ fontSize: 12 }}>{formatDateTime(row.create_time)}</td>
+                  <td>
+                    <button className="action-link" type="button" onClick={() => openDetail(row)}>
+                      Xem
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+            {filteredRows.length === 0 && (
+              <tr>
+                <td colSpan={8} style={{ textAlign: "center", color: "#888", padding: 24 }}>
+                  Không có đơn hàng nào.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </article>
     </section>
   );

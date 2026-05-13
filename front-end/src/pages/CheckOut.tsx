@@ -38,6 +38,8 @@ function CheckOut() {
   const [distance, setDistance] = useState("");
   const [duration, setDuration] = useState("");
   const [shippingPrice, setShippingPrice] = useState(0);
+  const [accountInfo, setAccountInfo] = useState({ fullname: "", phone: "", email: "" });
+  const [useOtherRecipient, setUseOtherRecipient] = useState(false);
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<CheckoutForm>({
     defaultValues: {
@@ -67,6 +69,25 @@ function CheckOut() {
 
   useEffect(() => {
     ensureUserSession();
+
+    const token = localStorage.getItem("token");
+    if (token) {
+      fetch(`${API_BASE_URLS.user}/users/`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (!data) return;
+          const fullname = [data.firstName, data.lastName].filter(Boolean).join(" ").trim();
+          const phone = data.phone || "";
+          const email = data.email || "";
+          setAccountInfo({ fullname, phone, email });
+          setValue("fullname", fullname);
+          setValue("phone", phone);
+          setValue("email", email);
+        })
+        .catch(() => {});
+    }
 
     const storedShipping = Number(localStorage.getItem("price") || 0);
     if (storedShipping) {
@@ -272,6 +293,19 @@ function CheckOut() {
 
   const totalDisplay = useMemo(() => formatVnd(totalPrice), [totalPrice]);
 
+  const toggleRecipient = () => {
+    if (!useOtherRecipient) {
+      setValue("fullname", "");
+      setValue("phone", "");
+      setValue("email", "");
+    } else {
+      setValue("fullname", accountInfo.fullname);
+      setValue("phone", accountInfo.phone);
+      setValue("email", accountInfo.email);
+    }
+    setUseOtherRecipient((prev) => !prev);
+  };
+
   return (
     <div>
       {loadOrder && (
@@ -339,19 +373,17 @@ function CheckOut() {
                       {errors.email && <span className="field-error">* Vui lòng nhập email</span>}
                     </div>
                   </div>
+
                   <div className="col-md-12">
                     <div className="checkout-form-list">
-                      <label>
-                        Gửi từ <span className="required">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        id="from_places"
-                        disabled
-                        value="155 Sư Vạn Hạnh, Phường 13, Quận 10, Hồ Chí Minh"
-                        style={{ backgroundColor: "#f5f5f5" }}
-                      />
-                      <input id="origin" name="origin" type="hidden" value="155 Sư Vạn Hạnh" />
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary"
+                        style={{ width: "100%", marginBottom: 8 }}
+                        onClick={toggleRecipient}
+                      >
+                        {useOtherRecipient ? "← Dùng thông tin tài khoản của tôi" : "Gửi cho người nhận khác →"}
+                      </button>
                     </div>
                   </div>
 

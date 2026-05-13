@@ -3,6 +3,7 @@ import "../Style/home.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Card from "../component/card";
 import { API_BASE_URLS } from "../config/api";
+import CartsLocal, { type LocalCartItem } from "../utils/cartLocal";
 
 function Home() {
   const [data, setData] = useState<any[]>([]);
@@ -54,35 +55,35 @@ function Home() {
     window.location.href = `/productinfo/${productID}`;
   };
 
-  const handleAddToCart = (productID: string, stock?: number | null) => {
-    const normalizedStock = Number.isFinite(Number(stock)) ? Number(stock) : null;
+  const handleAddToCart = async (product: any) => {
+    const normalizedStock = Number.isFinite(Number(product?.stock)) ? Number(product.stock) : null;
     if (normalizedStock !== null && normalizedStock <= 0) {
       alert("Sản phẩm đã hết hàng");
       return;
     }
-    const token = localStorage.getItem("token");
-    if (!token) {
-      window.location.href = "/login";
+    const productId = String(product?._id || product?.id || "").trim();
+    if (!productId) {
+      alert("Không thể thêm sản phẩm này vào giỏ hàng");
       return;
     }
 
-    fetch(`${API_BASE_URLS.cart}/cart/${productID}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then((response) => {
-        if (response.ok) {
-          alert("Đã thêm vào giỏ hàng");
-          return;
-        }
-        window.location.href = "/login";
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-      });
+    const cartItem: LocalCartItem = {
+      id_cart: Date.now().toString(),
+      id_product: productId,
+      name_product: product?.name || "",
+      price_product: Number(product?.price ?? 0),
+      count: 1,
+      image: product?.image,
+      size: "default",
+    };
+
+    try {
+      await CartsLocal.addProduct(cartItem);
+      alert("Đã thêm vào giỏ hàng");
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Không thể thêm vào giỏ hàng");
+    }
   };
 
   const handleSelectChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -404,7 +405,7 @@ function Home() {
                                 imgsrc={product.image}
                                 category={product.category}
                                 stock={product.stock}
-                                onAddToCart={() => handleAddToCart(product._id, product.stock)}
+                                onAddToCart={() => handleAddToCart(product)}
                               />
                             </div>
                           )
