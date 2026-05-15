@@ -45,6 +45,7 @@ jobs:
   validate-frontend:
     name: Validate front-end
     runs-on: ubuntu-latest
+    needs: validate-backends
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -68,6 +69,33 @@ jobs:
           VITE_CHECKOUT_API_URL: ${{ vars.VITE_CHECKOUT_API_URL || 'http://localhost:3004' }}
           VITE_CART_API_URL: ${{ vars.VITE_CART_API_URL || 'http://localhost:3004' }}
         run: npm run build
+
+  run-tests:
+    name: Run tests
+    runs-on: ubuntu-latest
+    needs:
+      - validate-backends
+      - validate-frontend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Run frontend tests
+        working-directory: front-end
+        run: |
+          npm ci
+          npm run test --if-present -- --run
+
+      - name: Run identity service tests
+        working-directory: services/identity
+        run: |
+          npm ci
+          npx jest --ci --runInBand
 
   validate-admin-portal:
     name: Validate admin portal
