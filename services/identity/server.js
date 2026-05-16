@@ -66,7 +66,10 @@ app.get('/me', validateToken, getUser);
 
 app.use("/users", require("./routes/userRouter"))
 
-
+const { ensureSeedAdmin } = require('./scripts/seedAdmin');
+ensureSeedAdmin().catch((error) => {
+    console.error('Failed to seed admin user', error.message);
+});
 
 if (require.main === module) {
     app.listen(port, () => {

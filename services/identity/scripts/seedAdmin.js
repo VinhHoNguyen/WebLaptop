@@ -2,7 +2,7 @@ const pool = require('../config/db_conn');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 
-(async () => {
+const ensureSeedAdmin = async () => {
   try {
     const email = process.env.SEED_ADMIN_EMAIL || 'admin@local';
     const password = process.env.SEED_ADMIN_PASSWORD || 'Admin@123';
@@ -15,7 +15,7 @@ const crypto = require('crypto');
     const [existing] = await pool.query('SELECT id FROM users WHERE email = ? LIMIT 1', [email]);
     if (existing.length) {
       console.log('Admin already exists:', existing[0].id);
-      process.exit(0);
+      return;
     }
 
     const hashed = await bcrypt.hash(password, 10);
@@ -27,9 +27,13 @@ const crypto = require('crypto');
     );
 
     console.log('Admin created:', email);
-    process.exit(0);
   } catch (err) {
-    console.error('Seed admin failed:', err);
-    process.exit(1);
+    console.error('Seed admin failed:', err.message);
   }
-})();
+};
+
+if (require.main === module) {
+  ensureSeedAdmin().then(() => process.exit(0)).catch(() => process.exit(1));
+}
+
+module.exports = { ensureSeedAdmin };
