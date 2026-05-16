@@ -13,7 +13,7 @@ import OrderHistory from "./pages/OrderHistory";
 import OrderMomo from "./pages/OrderMomo";
 import OrderSuccess from "./pages/OrderSuccess";
 import NavBar from "./component/NavBar";
-import ChatAssistant from "./component/ChatAssistant";
+import ChatBubble from "./component/ChatBubble";
 import Footer from "./component/Footer";
 function App() {
   return (
@@ -35,7 +35,7 @@ function App() {
         </Routes>
       </Router>
       <Footer />
-      <ChatAssistant />
+      <ChatBubble />
     </Fragment>
   );
 }
