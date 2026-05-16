@@ -117,6 +117,10 @@ app.get('/', (req, res) => {
   res.send('Welcome to the Shopping App API!');
 });
 
-http.listen(port, () => {
-  console.log('listening on *: ' + port);
-});
+if (require.main === module) {
+  http.listen(port, () => {
+    console.log('listening on *: ' + port);
+  });
+}
+
+module.exports = app;

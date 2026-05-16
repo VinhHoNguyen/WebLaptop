@@ -6,6 +6,8 @@ import { formatVnd } from "../utils/currency";
 import CartsLocal, { type LocalCartItem } from "../utils/cartLocal";
 
 type ProductDetails = {
+  _id?: string;
+  id?: string;
   image?: string;
   name?: string;
   description?: string;
