@@ -20,6 +20,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    networks:
+      - app-network
 
   identity:
     build:
@@ -42,7 +44,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
-
+    networks:
+      - app-network
   catalog:
     build:
       context: ./services/catalog
@@ -66,7 +69,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
-
+    networks:
+      - app-network
   checkout:
     build:
       context: ./services/checkout
@@ -100,7 +104,8 @@ services:
         condition: service_healthy
       catalog:
         condition: service_started
-
+    networks:
+      - app-network
   front-end:
     build:
       context: ./front-end
@@ -120,7 +125,8 @@ services:
       - identity
       - catalog
       - checkout
-
+    networks:
+      - app-network
   admin-portal:
     build:
       context: ./admin-portal
@@ -135,6 +141,24 @@ services:
     depends_on:
       - identity
       - catalog
-
+    networks:
+      - app-network
+  n8n:
+    image: n8nio/n8n
+    container_name: webgame-n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+    environment:
+      - N8N_CORS_ENABLE=true
+      - N8N_CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:5174
+    networks:
+      - app-network
+networks:
+  app-network:
+    driver: bridge
 volumes:
   mysql_data:
+  n8n_data:  

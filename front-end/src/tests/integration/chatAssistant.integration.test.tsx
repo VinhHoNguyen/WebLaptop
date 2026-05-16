@@ -48,8 +48,7 @@ describe("ChatBubble integration", () => {
 
     render(<ChatBubble />);
 
-    // Open chat first
-    fireEvent.click(screen.getByRole("button", { name: /💬|Chat/i }));
+    // Open chat first Chat/i }));
 
     fireEvent.change(screen.getByPlaceholderText("Nhập câu hỏi..."), {
       target: { value: "Test loi" },
