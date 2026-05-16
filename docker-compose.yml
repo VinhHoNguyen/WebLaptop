@@ -15,6 +15,7 @@ services:
       - ./services/checkout/sql/schema.sql:/docker-entrypoint-initdb.d/01-checkout-schema.sql:ro
       - ./services/identity/sql/schema.sql:/docker-entrypoint-initdb.d/02-identity-schema.sql:ro
       - ./services/catalog/sql/schema.sql:/docker-entrypoint-initdb.d/03-product-schema.sql:ro
+      - ./services/identity/sql/04-identity-seed.sql:/docker-entrypoint-initdb.d/04-identity-seed.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -u$$MYSQL_USER -p$$MYSQL_PASSWORD || exit 1"]
       interval: 10s
@@ -134,6 +135,7 @@ services:
       args:
         VITE_USER_API_URL: ${VITE_USER_API_URL:-http://localhost:3001}
         VITE_PRODUCT_API_URL: ${VITE_PRODUCT_API_URL:-http://localhost:3002}
+        VITE_CHECKOUT_API_URL: ${VITE_CHECKOUT_API_URL:-http://localhost:3004}
     container_name: webgame-admin-portal
     restart: unless-stopped
     ports:
