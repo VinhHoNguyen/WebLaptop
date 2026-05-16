@@ -1,95 +1,98 @@
-import { Fragment, useState } from "react";
+import { useState } from "react";
 import "../Style/Login.css";
 import { API_BASE_URLS } from "../config/api";
 import { decodeJwt } from "../utils/auth";
 import CartsLocal from "../utils/cartLocal";
+
 function Login() {
-
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    
     try {
       const response = await fetch(`${API_BASE_URLS.user}/users/login`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
       });
-  
+
       if (response.ok) {
-        console.log("Login successful");
         const token = await response.json();
         localStorage.setItem("token", token);
 
         const payload = decodeJwt(token);
         if (payload?.user) {
           localStorage.setItem("user", JSON.stringify(payload.user));
-          if (payload.user.id) {
-            sessionStorage.setItem("id_user", payload.user.id);
-          }
+          if (payload.user.id) sessionStorage.setItem("id_user", payload.user.id);
         }
 
-        try {
-          await CartsLocal.syncWithServer();
-        } catch (syncError) {
-          console.error("Failed to sync cart after login", syncError);
-        }
-
+        try { await CartsLocal.syncWithServer(); } catch {}
         window.location.href = "/";
       } else {
         alert("Sai email hoặc mật khẩu");
-        window.location.href = "/login";
-        console.log("Login failed");
       }
     } catch (error) {
       console.error("Error:", error);
     }
-
-
   }
+
   return (
-    <Fragment>
-      <div className="bg-img">
-        <div className="content">
-          <header>Đăng nhập</header>
-          <form onSubmit={handleSubmit}>
-            <h4 className="fieldHeader">Email</h4>
-            <div className="field">
-              <span className="person"> </span>
-              <input
-                type="text"
-                required
-                placeholder="Email hoặc tên đăng nhập"
-                onChange={(event) => setEmail(event.target.value)}
-              ></input>
-            </div>
-            <h4 className="fieldHeader space">Mật khẩu</h4>
-            <div className="field space">
-              <span className="password"></span>
-              <input
-                type="password"
-                className="pass-key"
-                required
-                placeholder="Mật khẩu"
-                onChange={(event) => setPassword(event.target.value)}
-              ></input>
-              <span className="show">HIỆN</span>
-            </div>
-            <div className="field space">
-              <input type="submit" value="ĐĂNG NHẬP" />
-            </div>
-          </form>
-          <div className="signup space">
-            Chưa có tài khoản?
-            <a href="/register">Đăng ký ngay</a>
+    <div className="login-page">
+      <div className="login-card">
+        <a href="/" className="login-logo">
+          <div className="login-logo-mark">SV</div>
+          <span>LapSinhVien</span>
+        </a>
+
+        <h1 className="login-title">Đăng nhập</h1>
+        <p className="login-subtitle">Chào mừng trở lại! Đăng nhập để tiếp tục mua sắm.</p>
+
+        <form className="login-form" onSubmit={handleSubmit}>
+          <div className="login-field">
+            <label htmlFor="login-email">Email</label>
+            <input
+              id="login-email"
+              type="text"
+              required
+              placeholder="Nhập email của bạn"
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
-        </div>
+
+          <div className="login-field">
+            <label htmlFor="login-password">Mật khẩu</label>
+            <div className="login-password-wrap">
+              <input
+                id="login-password"
+                type={showPassword ? "text" : "password"}
+                required
+                placeholder="Nhập mật khẩu"
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                className="login-eye"
+                onClick={() => setShowPassword((v) => !v)}
+                tabIndex={-1}
+              >
+                {showPassword ? "Ẩn" : "Hiện"}
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" className="login-submit">
+            Đăng nhập
+          </button>
+        </form>
+
+        <p className="login-footer">
+          Chưa có tài khoản?{" "}
+          <a href="/register">Đăng ký ngay</a>
+        </p>
       </div>
-    </Fragment>
+    </div>
   );
 }
 

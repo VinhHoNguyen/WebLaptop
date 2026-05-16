@@ -14,6 +14,7 @@ import OrderMomo from "./pages/OrderMomo";
 import OrderSuccess from "./pages/OrderSuccess";
 import NavBar from "./component/NavBar";
 import ChatAssistant from "./component/ChatAssistant";
+import Footer from "./component/Footer";
 function App() {
   return (
     <Fragment>
@@ -33,6 +34,7 @@ function App() {
           <Route path="/history" element={<OrderHistory />} />
         </Routes>
       </Router>
+      <Footer />
       <ChatAssistant />
     </Fragment>
   );

@@ -9,7 +9,8 @@ import NoteAPI from "../api/NoteAPI";
 import OrderAPI from "../api/OrderAPI";
 import { changeCount } from "../redux/actions/countActions";
 import type { RootState } from "../redux/store";
-import { getCartKey, type LocalCartItem } from "../utils/cartLocal";
+import CartsLocal, { getCartKey, type LocalCartItem } from "../utils/cartLocal";
+import { recordOrderSim } from "../utils/orderLocal";
 
 function OrderMomo() {
   const [note, setNote] = useState("");
@@ -43,10 +44,22 @@ function OrderMomo() {
           await CouponAPI.updateCoupon(localStorage.getItem("id_coupon") || "");
         }
 
-        const responseNote = await NoteAPI.post_note({
-          fullname: information.fullname,
-          phone: information.phone,
-        });
+        // NoteAPI is optional — skip if the endpoint is unavailable
+        let noteId: string | null = null;
+        try {
+          const responseNote = await NoteAPI.post_note({
+            fullname: information.fullname,
+            phone: information.phone,
+          });
+          noteId =
+            responseNote?.data?._id ||
+            responseNote?.data?.id ||
+            responseNote?._id ||
+            responseNote?.id ||
+            null;
+        } catch {
+          // continue without note
+        }
 
         const userId = sessionStorage.getItem("id_user") || "";
         const dataOrder = {
@@ -56,31 +69,38 @@ function OrderMomo() {
           status: "1",
           pay: true,
           id_payment: "60c05c3adae4bef7b3d55fbf",
-          id_note: responseNote?._id,
+          id_note: noteId,
           feeship: price,
           id_coupon: localStorage.getItem("id_coupon") || "",
           create_time: `${new Date().getDate()}/${new Date().getMonth() + 1}/${new Date().getFullYear()}`,
         };
 
         const responseOrder = await OrderAPI.post_order(dataOrder);
+        const orderId: string =
+          responseOrder?.data?.id ||
+          responseOrder?.data?._id ||
+          responseOrder?._id ||
+          responseOrder?.id ||
+          "";
+
         const cartKey = getCartKey();
         const cartRaw = localStorage.getItem(cartKey);
         const dataCarts = cartRaw ? (JSON.parse(cartRaw) as LocalCartItem[]) : [];
 
         for (let i = 0; i < dataCarts.length; i += 1) {
-          const dataDetailOrder = {
-            id_order: responseOrder?._id,
+          await DetailOrderAPI.post_detail_order({
+            id_order: orderId,
             id_product: dataCarts[i].id_product,
             name_product: dataCarts[i].name_product,
             price_product: dataCarts[i].price_product,
             count: dataCarts[i].count,
             size: dataCarts[i].size,
-          };
-
-          await DetailOrderAPI.post_detail_order(dataDetailOrder);
+            image: dataCarts[i].image || null,
+          });
         }
 
-        localStorage.setItem(cartKey, JSON.stringify([]));
+        if (orderId) recordOrderSim(orderId);
+        await CartsLocal.clearCart();
         localStorage.removeItem("information");
         localStorage.removeItem("total_price");
         localStorage.removeItem("price");
@@ -91,7 +111,7 @@ function OrderMomo() {
 
         dispatch(changeCount(countChange));
         setTimeout(() => {
-          navigate("/history");
+          navigate("/");
         }, 2500);
 
         setNote("Thanh toán MoMo thành công!");

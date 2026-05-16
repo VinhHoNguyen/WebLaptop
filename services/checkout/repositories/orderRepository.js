@@ -37,6 +37,7 @@ const normalizeDetailOrder = (row) => {
     price_product: row.price_product,
     count: Number(row.count || 0),
     size: row.size,
+    image: row.image || null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -98,8 +99,8 @@ const getOrderDetailsByOrderId = async (idOrder) => {
 const createDetailOrder = async (payload) => {
   const id = payload.id || generateId();
   await pool.query(
-    `INSERT INTO order_details (id, id_order, id_product, name_product, price_product, count, size)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO order_details (id, id_order, id_product, name_product, price_product, count, size, image)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       id,
       payload.id_order || null,
@@ -108,6 +109,7 @@ const createDetailOrder = async (payload) => {
       payload.price_product || null,
       Number(payload.count || 0),
       payload.size || null,
+      payload.image || null,
     ]
   );
 

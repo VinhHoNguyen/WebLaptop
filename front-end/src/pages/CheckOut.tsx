@@ -13,9 +13,10 @@ import MoMo from "../component/MoMo";
 import { API_BASE_URLS } from "../config/api";
 import { changeCount } from "../redux/actions/countActions";
 import type { RootState } from "../redux/store";
-import { ensureUserSession } from "../utils/auth";
+import { ensureUserSession, getUserFromToken } from "../utils/auth";
 import { formatVnd } from "../utils/currency";
-import { getCartKey, type LocalCartItem } from "../utils/cartLocal";
+import CartsLocal, { getCartKey, type LocalCartItem } from "../utils/cartLocal";
+import { recordOrderSim } from "../utils/orderLocal";
 
 type CheckoutForm = {
   fullname: string;
@@ -23,6 +24,10 @@ type CheckoutForm = {
   email: string;
   address: string;
 };
+
+type VNUnit = { code: number; name: string };
+
+const SHIPPING_FEE = 30000;
 
 function CheckOut() {
   const [orderID, setOrderID] = useState("");
@@ -33,21 +38,20 @@ function CheckOut() {
   const [loadOrder, setLoadOrder] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "momo" | "">("");
   const [paymentError, setPaymentError] = useState(false);
-  const [searchAddress, setSearchAddress] = useState("");
-  const [errorAddress, setErrorAddress] = useState(false);
-  const [distance, setDistance] = useState("");
-  const [duration, setDuration] = useState("");
-  const [shippingPrice, setShippingPrice] = useState(0);
   const [accountInfo, setAccountInfo] = useState({ fullname: "", phone: "", email: "" });
   const [useOtherRecipient, setUseOtherRecipient] = useState(false);
 
+  const [provinces, setProvinces] = useState<VNUnit[]>([]);
+  const [districts, setDistricts] = useState<VNUnit[]>([]);
+  const [wards, setWards] = useState<VNUnit[]>([]);
+  const [selectedProvince, setSelectedProvince] = useState<VNUnit | null>(null);
+  const [selectedDistrict, setSelectedDistrict] = useState<VNUnit | null>(null);
+  const [selectedWard, setSelectedWard] = useState<VNUnit | null>(null);
+  const [street, setStreet] = useState("");
+  const [addressError, setAddressError] = useState("");
+
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<CheckoutForm>({
-    defaultValues: {
-      fullname: "",
-      phone: "",
-      email: "",
-      address: "",
-    },
+    defaultValues: { fullname: "", phone: "", email: "", address: "" },
   });
 
   const information = watch();
@@ -62,13 +66,25 @@ function CheckOut() {
 
   useEffect(() => {
     socket.connect();
-    return () => {
-      socket.disconnect();
-    };
+    return () => { socket.disconnect(); };
   }, [socket]);
 
   useEffect(() => {
     ensureUserSession();
+
+    const applyInfo = (fullname: string, phone: string, email: string) => {
+      setAccountInfo({ fullname, phone, email });
+      setValue("fullname", fullname);
+      setValue("phone", phone);
+      setValue("email", email);
+    };
+
+    // Prefill immediately from JWT so form is never empty on load
+    const tokenUser = getUserFromToken();
+    if (tokenUser) {
+      const fullname = [tokenUser.firstName, tokenUser.lastName].filter(Boolean).join(" ").trim();
+      applyInfo(fullname, tokenUser.phone || "", tokenUser.email || "");
+    }
 
     const token = localStorage.getItem("token");
     if (token) {
@@ -79,56 +95,30 @@ function CheckOut() {
         .then((data) => {
           if (!data) return;
           const fullname = [data.firstName, data.lastName].filter(Boolean).join(" ").trim();
-          const phone = data.phone || "";
-          const email = data.email || "";
-          setAccountInfo({ fullname, phone, email });
-          setValue("fullname", fullname);
-          setValue("phone", phone);
-          setValue("email", email);
+          applyInfo(fullname, data.phone || "", data.email || "");
         })
         .catch(() => {});
-    }
-
-    const storedShipping = Number(localStorage.getItem("price") || 0);
-    if (storedShipping) {
-      setShippingPrice(storedShipping);
     }
 
     const cartKey = getCartKey();
     const cached = localStorage.getItem(cartKey);
     if (cached) {
-      try {
-        setCarts(JSON.parse(cached) as LocalCartItem[]);
-      } catch {
-        localStorage.removeItem(cartKey);
-      }
+      try { setCarts(JSON.parse(cached) as LocalCartItem[]); }
+      catch { localStorage.removeItem(cartKey); }
     }
 
     const fetchCartFromServer = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        return;
-      }
-
+      const t = localStorage.getItem("token");
+      if (!t) return;
       try {
         const response = await fetch(`${API_BASE_URLS.cart}/cart`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
         });
-
-        if (!response.ok) {
-          return;
-        }
-
+        if (!response.ok) return;
         const payload = await response.json();
         const data = payload?.data ?? payload ?? {};
-        const products = Array.isArray(data.products)
-          ? data.products
-          : Array.isArray(data.Products)
-            ? data.Products
-            : [];
+        const products = Array.isArray(data.products) ? data.products
+          : Array.isArray(data.Products) ? data.Products : [];
         const items = products.map((product: any) => ({
           id_cart: product._id,
           id_product: product._id,
@@ -138,64 +128,75 @@ function CheckOut() {
           image: product.image,
           size: "default",
         }));
-
         setCarts(items);
         localStorage.setItem(cartKey, JSON.stringify(items));
       } catch (error) {
         console.error("Error:", error);
       }
     };
-
     fetchCartFromServer();
   }, []);
 
   useEffect(() => {
-    let sumPrice = carts.reduce((sum, item) => sum + Number(item.price_product) * Number(item.count), 0);
-    let currentDiscount = 0;
+    fetch("https://provinces.open-api.vn/api/p/")
+      .then((res) => res.json())
+      .then(setProvinces)
+      .catch(() => {});
+  }, []);
 
+  useEffect(() => {
+    const parts = [street.trim(), selectedWard?.name, selectedDistrict?.name, selectedProvince?.name].filter(Boolean);
+    setValue("address", parts.join(", "));
+    if (addressError) setAddressError("");
+  }, [street, selectedWard, selectedDistrict, selectedProvince]);
+
+  useEffect(() => {
+    const sumPrice = carts.reduce((sum, item) => sum + Number(item.price_product) * Number(item.count), 0);
+    let currentDiscount = 0;
     const couponRaw = localStorage.getItem("coupon");
     if (couponRaw) {
       try {
-        const coupon = JSON.parse(couponRaw) as { promotion?: string | number };
-        const promotion = Number(coupon.promotion || 0);
-        if (promotion > 0) {
-          currentDiscount = (sumPrice * promotion) / 100;
-        }
-      } catch {
-        currentDiscount = 0;
-      }
+        const promotion = Number((JSON.parse(couponRaw) as { promotion?: number }).promotion || 0);
+        if (promotion > 0) currentDiscount = (sumPrice * promotion) / 100;
+      } catch {}
     }
-
-    const total = sumPrice - currentDiscount + Number(shippingPrice || 0);
+    const total = sumPrice - currentDiscount + SHIPPING_FEE;
     setDiscount(currentDiscount);
     setTotalPrice(total);
     localStorage.setItem("total_price", String(total));
-  }, [carts, shippingPrice]);
+  }, [carts]);
 
-  const handlerCheckDistance = () => {
-    const mapElement = document.getElementById("to_places") as HTMLInputElement | null;
-    const mapAddressValue = mapElement?.value?.trim() || "";
-    const selectedAddress = mapAddressValue || searchAddress.trim();
+  const handleProvinceChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const code = Number(e.target.value);
+    setSelectedProvince(code ? { code, name: provinces.find((p) => p.code === code)?.name || "" } : null);
+    setSelectedDistrict(null);
+    setSelectedWard(null);
+    setDistricts([]);
+    setWards([]);
+    if (!code) return;
+    try {
+      const res = await fetch(`https://provinces.open-api.vn/api/p/${code}?depth=2`);
+      const data = await res.json();
+      setDistricts(data.districts || []);
+    } catch {}
+  };
 
-    if (!selectedAddress) {
-      setErrorAddress(true);
-      return;
-    }
+  const handleDistrictChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const code = Number(e.target.value);
+    setSelectedDistrict(code ? { code, name: districts.find((d) => d.code === code)?.name || "" } : null);
+    setSelectedWard(null);
+    setWards([]);
+    if (!code) return;
+    try {
+      const res = await fetch(`https://provinces.open-api.vn/api/d/${code}?depth=2`);
+      const data = await res.json();
+      setWards(data.wards || []);
+    } catch {}
+  };
 
-    const kilo = document.getElementById("in_kilo")?.textContent?.trim() || "";
-    const durationText = document.getElementById("duration_text")?.textContent?.trim() || "";
-    const priceText = document.getElementById("price_shipping")?.textContent?.trim() || "";
-
-    const priceValue = Number(priceText.replace(/[^0-9]/g, "")) || 0;
-
-    setDistance(kilo);
-    setDuration(durationText);
-    setShippingPrice(priceValue);
-    localStorage.setItem("price", String(priceValue));
-
-    setSearchAddress(selectedAddress);
-    setValue("address", selectedAddress, { shouldValidate: true });
-    setErrorAddress(false);
+  const handleWardChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const code = Number(e.target.value);
+    setSelectedWard(code ? { code, name: wards.find((w) => w.code === code)?.name || "" } : null);
   };
 
   const handlerCheckout = async (data: CheckoutForm) => {
@@ -203,25 +204,21 @@ function CheckOut() {
       alert("Giỏ hàng đang trống");
       return;
     }
-
     if (!paymentMethod) {
       setPaymentError(true);
       return;
     }
-
-    if (!data.address) {
-      setErrorAddress(true);
-      alert("Vui lòng nhập địa chỉ và bấm 'Tính phí' để xác nhận!");
+    if (!selectedProvince || !selectedDistrict || !selectedWard || !street.trim()) {
+      setAddressError("Vui lòng điền đầy đủ địa chỉ nhận hàng");
       return;
     }
-
     setPaymentError(false);
+    setAddressError("");
 
     if (paymentMethod === "momo") {
       localStorage.setItem("information", JSON.stringify(data));
       localStorage.setItem("total_price", String(totalPrice));
-      localStorage.setItem("price", String(shippingPrice));
-
+      localStorage.setItem("price", String(SHIPPING_FEE));
       const newOrderId = `ORDER${Date.now()}`;
       setOrderID(newOrderId);
       setTriggerMomo(true);
@@ -229,16 +226,24 @@ function CheckOut() {
     }
 
     setLoadOrder(true);
-
     try {
       if (localStorage.getItem("id_coupon")) {
         await CouponAPI.updateCoupon(localStorage.getItem("id_coupon") || "");
       }
 
-      const responseDelivery = await NoteAPI.post_note({
-        fullname: data.fullname,
-        phone: data.phone,
-      });
+      // NoteAPI is optional — skip if the endpoint is unavailable
+      let noteId: string | null = null;
+      try {
+        const responseDelivery = await NoteAPI.post_note({ fullname: data.fullname, phone: data.phone });
+        noteId =
+          responseDelivery?.data?._id ||
+          responseDelivery?.data?.id ||
+          responseDelivery?._id ||
+          responseDelivery?.id ||
+          null;
+      } catch {
+        // continue without note
+      }
 
       const userId = sessionStorage.getItem("id_user") || "";
       const dataOrder = {
@@ -248,39 +253,44 @@ function CheckOut() {
         status: "1",
         pay: false,
         id_payment: "6086709cdc52ab1ae999e882",
-        id_note: responseDelivery?._id,
-        feeship: shippingPrice,
+        id_note: noteId,
+        feeship: SHIPPING_FEE,
         id_coupon: localStorage.getItem("id_coupon") || "",
         create_time: `${new Date().getDate()}/${new Date().getMonth() + 1}/${new Date().getFullYear()}`,
       };
 
       const responseOrder = await OrderAPI.post_order(dataOrder);
+      const orderId: string =
+        responseOrder?.data?.id ||
+        responseOrder?.data?._id ||
+        responseOrder?._id ||
+        responseOrder?.id ||
+        "";
+
       const cartKey = getCartKey();
       const cartRaw = localStorage.getItem(cartKey);
       const dataCarts = cartRaw ? (JSON.parse(cartRaw) as LocalCartItem[]) : [];
 
-      for (let i = 0; i < dataCarts.length; i += 1) {
-        const dataDetailOrder = {
-          id_order: responseOrder?._id,
-          id_product: dataCarts[i].id_product,
-          name_product: dataCarts[i].name_product,
-          price_product: dataCarts[i].price_product,
-          count: dataCarts[i].count,
-          size: dataCarts[i].size,
-        };
-
-        await DetailOrderAPI.post_detail_order(dataDetailOrder);
+      for (const item of dataCarts) {
+        await DetailOrderAPI.post_detail_order({
+          id_order: orderId,
+          id_product: item.id_product,
+          name_product: item.name_product,
+          price_product: item.price_product,
+          count: item.count,
+          size: item.size,
+          image: item.image || null,
+        });
       }
 
       socket.emit("send_order", "Có người vừa đặt hàng");
-
+      if (orderId) recordOrderSim(orderId);
       localStorage.removeItem("information");
       localStorage.removeItem("total_price");
       localStorage.removeItem("price");
       localStorage.removeItem("id_coupon");
       localStorage.removeItem("coupon");
-      localStorage.setItem(cartKey, JSON.stringify([]));
-
+      await CartsLocal.clearCart();
       dispatch(changeCount(countChange));
       navigate("/success");
     } catch (error) {
@@ -318,9 +328,7 @@ function CheckOut() {
         <div className="container">
           <div className="breadcrumb-content">
             <ul>
-              <li>
-                <a href="/">Trang chủ</a>
-              </li>
+              <li><a href="/">Trang chủ</a></li>
               <li className="active">Thanh toán</li>
             </ul>
           </div>
@@ -336,44 +344,25 @@ function CheckOut() {
                 <div className="row">
                   <div className="col-md-12">
                     <div className="checkout-form-list">
-                      <label>
-                        Họ và tên <span className="required">*</span>
-                      </label>
-                      <input
-                        placeholder="Nhập họ tên"
-                        type="text"
-                        {...register("fullname", { required: true })}
-                      />
+                      <label>Họ và tên <span className="required">*</span></label>
+                      <input placeholder="Nhập họ tên" type="text" {...register("fullname", { required: true })} />
                       {errors.fullname && <span className="field-error">* Vui lòng nhập họ tên</span>}
                     </div>
                   </div>
                   <div className="col-md-12">
                     <div className="checkout-form-list">
-                      <label>
-                        Số điện thoại <span className="required">*</span>
-                      </label>
-                      <input
-                        placeholder="Nhập số điện thoại"
-                        type="text"
-                        {...register("phone", { required: true })}
-                      />
+                      <label>Số điện thoại <span className="required">*</span></label>
+                      <input placeholder="Nhập số điện thoại" type="text" {...register("phone", { required: true })} />
                       {errors.phone && <span className="field-error">* Vui lòng nhập số điện thoại</span>}
                     </div>
                   </div>
                   <div className="col-md-12">
                     <div className="checkout-form-list">
-                      <label>
-                        Email <span className="required">*</span>
-                      </label>
-                      <input
-                        placeholder="Nhập email"
-                        type="email"
-                        {...register("email", { required: true })}
-                      />
+                      <label>Email <span className="required">*</span></label>
+                      <input placeholder="Nhập email" type="email" {...register("email", { required: true })} />
                       {errors.email && <span className="field-error">* Vui lòng nhập email</span>}
                     </div>
                   </div>
-
                   <div className="col-md-12">
                     <div className="checkout-form-list">
                       <button
@@ -387,101 +376,97 @@ function CheckOut() {
                     </div>
                   </div>
 
-                  <div className="col-md-12">
-                    <div className="checkout-form-list">
-                      <label>
-                        Tìm kiếm địa chỉ <span className="required">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        id="to_places"
-                        placeholder="Nhập địa chỉ giao hàng"
-                        value={searchAddress}
-                        onChange={(event) => setSearchAddress(event.target.value)}
-                      />
-                      {errorAddress && (
-                        <span className="field-error">* Vui lòng nhập địa chỉ và bấm 'Tính phí'</span>
-                      )}
-                    </div>
+                  <div className="col-12">
+                    <div className="address-section-title">Địa chỉ nhận hàng</div>
                   </div>
 
                   <div className="col-md-12">
                     <div className="checkout-form-list">
-                      <button
-                        type="button"
-                        className="btn btn-dark"
-                        style={{ width: "100%", marginBottom: "20px" }}
-                        onClick={handlerCheckDistance}
+                      <label>Tỉnh / Thành phố <span className="required">*</span></label>
+                      <select
+                        value={selectedProvince ? String(selectedProvince.code) : ""}
+                        onChange={handleProvinceChange}
                       >
-                        Kiểm tra địa chỉ &amp; Tính phí Ship
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="col-md-12">
-                    <div className="checkout-form-list">
-                      <label className="address-label">Địa chỉ nhận hàng (Chính thức):</label>
-                      <input
-                        type="text"
-                        {...register("address", { required: true })}
-                        value={information.address || ""}
-                        readOnly
-                        style={{
-                          backgroundColor: information.address ? "#e8f5e9" : "#fff",
-                          fontWeight: "bold",
-                          color: "#2d3436",
-                          border: "1px solid #27ae60",
-                        }}
-                        placeholder="Địa chỉ sẽ hiện ở đây sau khi tính phí..."
-                      />
-                      {errors.address && <span className="field-error">* Chưa xác nhận địa chỉ</span>}
-                    </div>
-                  </div>
-
-                  <div className="col-md-12">
-                    <div className="checkout-form-list">
-                      <label>Phương tiện vận chuyển</label>
-                      <select id="travel_mode" name="travel_mode" className="form-control">
-                        <option value="DRIVING">Xe máy / Ô tô</option>
+                        <option value="">-- Chọn tỉnh / thành phố --</option>
+                        {provinces.map((p) => (
+                          <option key={p.code} value={p.code}>{p.name}</option>
+                        ))}
                       </select>
                     </div>
                   </div>
 
-                  {(distance || duration || shippingPrice > 0) && (
-                    <div className="col-md-12">
-                      <div className="shipping-summary">
-                        <div>
-                          <strong>Khoảng cách:</strong> {distance || "Đang cập nhật"}
-                        </div>
-                        <div>
-                          <strong>Thời gian:</strong> {duration || "Đang cập nhật"}
-                        </div>
-                        <div>
-                          <strong>Phí vận chuyển:</strong> <span className="shipping-price">{formatVnd(shippingPrice)}</span>
+                  <div className="col-md-12">
+                    <div className="checkout-form-list">
+                      <label>Quận / Huyện <span className="required">*</span></label>
+                      <select
+                        value={selectedDistrict ? String(selectedDistrict.code) : ""}
+                        onChange={handleDistrictChange}
+                        disabled={!selectedProvince}
+                      >
+                        <option value="">-- Chọn quận / huyện --</option>
+                        {districts.map((d) => (
+                          <option key={d.code} value={d.code}>{d.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="col-md-12">
+                    <div className="checkout-form-list">
+                      <label>Phường / Xã <span className="required">*</span></label>
+                      <select
+                        value={selectedWard ? String(selectedWard.code) : ""}
+                        onChange={handleWardChange}
+                        disabled={!selectedDistrict}
+                      >
+                        <option value="">-- Chọn phường / xã --</option>
+                        {wards.map((w) => (
+                          <option key={w.code} value={w.code}>{w.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="col-md-12">
+                    <div className="checkout-form-list">
+                      <label>Số nhà, tên đường <span className="required">*</span></label>
+                      <input
+                        type="text"
+                        placeholder="VD: 12 Nguyễn Huệ"
+                        value={street}
+                        onChange={(e) => setStreet(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <input type="hidden" {...register("address")} />
+
+                  {addressError && (
+                    <div className="col-12" style={{ marginBottom: 8 }}>
+                      <span className="field-error">* {addressError}</span>
+                    </div>
+                  )}
+
+                  {information.address && (
+                    <div className="col-12">
+                      <div className="address-preview">
+                        <div className="address-preview-label">Địa chỉ giao hàng:</div>
+                        <div className="address-preview-value">{information.address}</div>
+                        <div className="address-preview-shipping">
+                          Phí vận chuyển: <span>{formatVnd(SHIPPING_FEE)}</span>
                         </div>
                       </div>
                     </div>
                   )}
 
-                  <div id="result" className="hide">
-                    <div>
-                      <label id="in_kilo"></label>
-                    </div>
-                    <div>
-                      <label id="duration_text"></label>
-                    </div>
-                    <div>
-                      <label id="price_shipping"></label>
-                    </div>
-                    <input id="destination" type="hidden" name="destination" />
-                  </div>
-
-                  <div className="col-md-12">
-                    <div className="checkout-form-list">
-                      <div className="order-button-payment">
-                        <input value="Đặt hàng" type="submit" style={{ width: "100%" }} />
-                      </div>
-                    </div>
+                  <div className="col-12" style={{ marginTop: 20 }}>
+                    <button type="submit" className="btn-place-order">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                      </svg>
+                      Đặt hàng ngay
+                    </button>
                   </div>
                 </div>
               </div>
@@ -495,12 +480,8 @@ function CheckOut() {
                 <table className="table">
                   <thead>
                     <tr>
-                      <th className="cart-product-name" style={{ width: "60%" }}>
-                        Sản phẩm
-                      </th>
-                      <th className="cart-product-total" style={{ textAlign: "right" }}>
-                        Thành tiền
-                      </th>
+                      <th className="cart-product-name" style={{ width: "60%" }}>Sản phẩm</th>
+                      <th className="cart-product-total" style={{ textAlign: "right" }}>Thành tiền</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -513,9 +494,7 @@ function CheckOut() {
                                 src={value.image}
                                 alt={value.name_product}
                                 className="order-item-image"
-                                onError={(event) => {
-                                  event.currentTarget.style.display = "none";
-                                }}
+                                onError={(event) => { event.currentTarget.style.display = "none"; }}
                               />
                             )}
                             <div>
@@ -536,7 +515,7 @@ function CheckOut() {
                     <tr className="cart-subtotal">
                       <th>Phí vận chuyển</th>
                       <td style={{ textAlign: "right" }}>
-                        <span className="amount">{formatVnd(shippingPrice)}</span>
+                        <span className="amount">{formatVnd(SHIPPING_FEE)}</span>
                       </td>
                     </tr>
                     <tr className="cart-subtotal">
@@ -628,11 +607,7 @@ function CheckOut() {
                             <p className="field-error">Vui lòng kiểm tra lại thông tin!</p>
                           ) : (
                             <div className="momo-body">
-                              <img
-                                src="https://homepage.momocdn.net/img/logo-momo.png"
-                                width="80"
-                                alt="MoMo"
-                              />
+                              <img src="https://homepage.momocdn.net/img/logo-momo.png" width="80" alt="MoMo" />
                               <p>Thanh toán an toàn qua ví MoMo</p>
                               {triggerMomo && orderID && totalPrice > 0 && (
                                 <MoMo orderID={orderID} total={totalPrice} />

@@ -1,153 +1,194 @@
-@import url('https://fonts.googleapis.com/css?family=Montserrat:400,500,600,700|Poppins:400,500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  user-select: none;
-}
-
-.bg-img {
-  background: url('src/assets/background1.jpg');
-  height: 100vh;
-  background-size: cover;
-  background-position: center;
-}
-.bg-img2 {
-  background: url('src/assets/background2.jpg');
-  height: 100vh;
-  background-size: cover;
-  background-position: center;
-}
-.bg-img:after {
-  position: absolute;
-  content: '';
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: 100%;
-  background: var(--overlay);
-}
-
-.row h6 {
-  color: white;
-  margin-top: 15px;
-  font-family: 'Montserrat', sans-serif;
-  position: relative;
+.register-page {
+  min-height: 100vh;
   display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(1200px 700px at 10% -10%, rgba(164, 69, 178, 0.28) 0%, transparent 60%),
+    radial-gradient(900px 500px at 90% 10%, rgba(250, 66, 153, 0.22) 0%, transparent 55%),
+    var(--bg);
+  padding: 32px 24px;
+  font-family: 'Poppins', sans-serif;
 }
 
-.sptop {
-  padding-top: 300px;
-}
-
-.registerContent {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  z-index: 999;
-  text-align: center;
-  padding: 30px 32px;
-  width: 500px;
-  transform: translate(-50%, -50%);
-  background: var(--surface-glass);
-  box-shadow: -1px 4px 28px 0px rgba(4, 6, 12, 0.7);
-}
-
-.field {
-  position: relative;
-  border-radius: 15px;
-  height: 45px;
+.register-card {
   width: 100%;
+  max-width: 540px;
+  background: rgba(18, 22, 36, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 44px 40px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.04);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.register-logo {
   display: flex;
-  background: rgba(255, 255, 255, 0.94);
-}
-
-.field span {
-  color: #222;
-  width: 50px;
-  margin-top: 5px;
-  line-height: 45px;
-}
-
-.field input {
-  height: 100%;
-  width: 100%;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: #222;
-  font-size: 16px;
-  font-family: 'Poppins', sans-serif;
-}
-
-.field select {
-  height: 100%;
-  width: 100%;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: #222;
-  font-size: 16px;
-  font-family: 'Poppins', sans-serif;
-  padding: 0 10px;
-}
-
-.field select option {
-  background: var(--surface);
-  color: var(--text);
-}
-
-.space {
-  margin-top: 16px;
-}
-
-.registerContent header {
-  color: white;
-  font-size: 33px;
-  font-weight: 600;
-  margin: 0 0 35px 0;
-  font-family: 'Montserrat', sans-serif;
-}
-
-.field input[type="submit"] {
-  background: var(--accent-gradient);
-  border: 0px;
-  color: white;
-  font-size: 18px;
-  letter-spacing: 1px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: 'Montserrat', sans-serif;
-}
-
-.field input[type="submit"]:hover {
-  background: linear-gradient(135deg, var(--accent-2), var(--accent));
-}
-
-.signup {
-  font-size: 15px;
-  color: white;
-  font-family: 'Poppins', sans-serif;
-}
-
-.signup a {
-  color: var(--accent);
-  margin-left: 5px;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 28px;
   text-decoration: none;
 }
 
-.signup a:hover {
+.register-logo-mark {
+  width: 40px;
+  height: 40px;
+  border-radius: 50% 50% 50% 8px;
+  background: var(--accent-gradient);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.register-logo span {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.register-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 6px 0;
+}
+
+.register-subtitle {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0 0 28px 0;
+  line-height: 1.6;
+}
+
+.register-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.register-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.register-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.register-field label {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text);
+  letter-spacing: 0.2px;
+}
+
+.register-field input,
+.register-field select {
+  height: 46px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: 'Poppins', sans-serif;
+  padding: 0 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+  width: 100%;
+}
+
+.register-field select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23a6b0c2' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+}
+
+.register-field select option {
+  background: var(--surface-alt);
+  color: var(--text);
+}
+
+.register-field input:focus,
+.register-field select:focus {
+  border-color: rgba(250, 66, 153, 0.6);
+  box-shadow: 0 0 0 3px rgba(250, 66, 153, 0.12);
+}
+
+.register-field input::placeholder {
+  color: rgba(166, 176, 194, 0.5);
+}
+
+.register-submit {
+  width: 100%;
+  height: 50px;
+  background: var(--accent-gradient);
+  border: none;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+  cursor: pointer;
+  margin-top: 6px;
+  transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+  letter-spacing: 0.3px;
+}
+
+.register-submit:hover {
+  opacity: 0.92;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(164, 69, 178, 0.4);
+}
+
+.register-submit:active {
+  transform: translateY(0);
+}
+
+.register-footer {
+  margin-top: 22px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.register-footer a {
   color: var(--accent-2);
+  font-weight: 600;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.register-footer a:hover {
+  opacity: 0.8;
   text-decoration: underline;
 }
 
-.inline {
-  color: white;
-  position: relative;
-  display: flex;
-  padding-top: 10px;
-  cursor: pointer;
-  font-weight: 500;
-  overflow: hidden;
+@media (max-width: 540px) {
+  .register-card {
+    padding: 32px 20px;
+    border-radius: 20px;
+  }
+
+  .register-row {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .register-title {
+    font-size: 22px;
+  }
 }

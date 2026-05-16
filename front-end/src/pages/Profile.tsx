@@ -1,10 +1,5 @@
 import "../Style/profile.css";
 import "bootstrap/dist/css/bootstrap.min.css";
-import data from "../data.json";
-import clip1 from "../assets/clip-01.jpg";
-import clip2 from "../assets/clip-02.jpg";
-import clip3 from "../assets/clip-03.jpg";
-import clip4 from "../assets/clip-04.jpg";
 import profile from "../assets/profile.jpg";
 import profileg from "../assets/profileGirl.jpg";
 import { useState, useEffect, Fragment } from "react";
@@ -20,8 +15,6 @@ type UserProfile = {
 };
 
 function Profile() {
-
-
   const [user, setUser] = useState<UserProfile>({});
 
   useEffect(() => {
@@ -33,11 +26,9 @@ function Profile() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-      }).then((response) => {
-        if (response.ok) {
-          response.json().then((data) => {
-            setUser(data);
-          });
+      }).then((res) => {
+        if (res.ok) {
+          res.json().then((data) => setUser(data));
         } else {
           window.location.href = "/login";
         }
@@ -47,59 +38,51 @@ function Profile() {
     }
   }, []);
 
+  const genderLabel =
+    user.gender === "female" ? "Nữ" : user.gender === "male" ? "Nam" : user.gender ?? "—";
 
-  // var image = profile;
-  // if (data.gender === "female") {
-  //   image = profileg;
-  // }
+  const infoItems = [
+    { label: "Email", value: user.email ?? "—" },
+    { label: "Tuổi", value: user.age ?? "—" },
+    { label: "Số điện thoại", value: user.phone ?? "—" },
+    { label: "Giới tính", value: genderLabel },
+  ];
+
   return (
     <Fragment>
-      <div className="widt">
-        <div className="row">
-          <div className="col-lg-12">
-            <div className="page-content">
-              <div className="row">
-                <div className="col-lg-12">
-                  <div className="main-profile">
-                    <div className="row">
-                      <div className="col-lg-4">
-                        {/* Render user profile image here */}
-                        <img src={user.gender === "female" ? profileg : profile} alt="Ảnh hồ sơ" />
-                      </div>
-                      <div className="col-lg-4 align-self-center">
-                        <div className="main-info header-text">
-                          <h1 id="firstname">{user.firstName}</h1>
-                          <h5 id="lastname">{user.lastName}</h5>
-                          <p>
-                            {`Mình là ${user.firstName ?? "bạn"}, yêu công nghệ và thích khám phá những chiếc laptop mới. Cùng tìm chiếc máy phù hợp nhé!`}
-                          </p>
-                          <div className="main-border-button">
-                            <a href="#">Cập nhật</a>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="col-lg-4 align-self-center">
-                        <ul>
-                          <li>
-                            Email <span>{user.email}</span>
-                          </li>
-                          <li>
-                            Tuổi <span>{user.age}</span>
-                          </li>
-                          <li>
-                            Số điện thoại <span>{user.phone}</span>
-                          </li>
-                          <li>
-                            Bộ sưu tập <span>29</span>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                    {/* Rest of the JSX code */}
-                    {/* ... */}
-                  </div>
-                </div>
+      <div className="profile-page">
+        <div className="container">
+          <div className="profile-card">
+            {/* ── Top: avatar + name ── */}
+            <div className="profile-top">
+              <div className="profile-avatar-wrap">
+                <img
+                  src={user.gender === "female" ? profileg : profile}
+                  alt="Ảnh hồ sơ"
+                  className="profile-avatar-img"
+                />
               </div>
+
+              <div className="profile-name-block">
+                <span className="profile-badge">Thành viên</span>
+                <h1 className="profile-fullname">
+                  {user.firstName ?? ""} {user.lastName ?? ""}
+                </h1>
+                <p className="profile-bio">
+                  {`Mình là ${user.firstName ?? "bạn"}, yêu công nghệ và thích khám phá những chiếc laptop mới. Cùng tìm chiếc máy phù hợp nhé!`}
+                </p>
+                <button className="profile-edit-btn">Cập nhật hồ sơ</button>
+              </div>
+            </div>
+
+            {/* ── Info grid ── */}
+            <div className="profile-info-grid">
+              {infoItems.map((item) => (
+                <div className="profile-info-item" key={item.label}>
+                  <span className="profile-info-label">{item.label}</span>
+                  <span className="profile-info-value">{String(item.value)}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -107,4 +90,5 @@ function Profile() {
     </Fragment>
   );
 }
+
 export default Profile;

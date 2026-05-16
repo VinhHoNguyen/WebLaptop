@@ -1,6 +1,7 @@
 import "../Style/Register.css";
 import { useState } from "react";
 import { API_BASE_URLS } from "../config/api";
+
 function Register() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -32,10 +33,8 @@ function Register() {
 
       const response = await fetch(`${API_BASE_URLS.user}/users`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payload)
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
 
       const responseData = await response.json().catch(() => null);
@@ -44,162 +43,127 @@ function Register() {
         return;
       }
 
-      console.log("Đăng ký thành công");
       window.location.href = "/login";
     } catch (error) {
       console.error("Error:", error);
     }
   }
+
   return (
-    <div className="bg-img">
-      <div className="registerContent">
-        <header>Đăng ký</header>
-        <form onSubmit={handleSubmit}>
-          <div className="row">
-            <div className="col">
-              <h6>Họ</h6>
+    <div className="register-page">
+      <div className="register-card">
+        <a href="/" className="register-logo">
+          <div className="register-logo-mark">SV</div>
+          <span>LapSinhVien</span>
+        </a>
+
+        <h1 className="register-title">Tạo tài khoản</h1>
+        <p className="register-subtitle">Điền thông tin bên dưới để bắt đầu mua sắm.</p>
+
+        <form className="register-form" onSubmit={handleSubmit}>
+          <div className="register-row">
+            <div className="register-field">
+              <label>Họ</label>
+              <input
+                type="text"
+                required
+                placeholder="Họ"
+                onChange={(e) => setFirstName(e.target.value)}
+              />
             </div>
-            <div className="col">
-              <h6>Tên</h6>
-            </div>
-          </div>
-          <div className="row">
-            <div className="col">
-              <div className="field">
-                <input
-                  type="text"
-                  className="form-control"
-                  required
-                  placeholder="Họ"
-                  onChange={(event) => setFirstName(event.target.value)}
-                ></input>
-              </div>
-            </div>
-            <div className="col">
-              <div className="field">
-                <input
-                  type="text"
-                  className="form-control"
-                  required
-                  placeholder="Tên"
-                  onChange={(event) => setLastName(event.target.value)}
-                ></input>
-              </div>
-            </div>
-          </div>
-          <div className="row">
-            <div className="col">
-              <h6>Email</h6>
-            </div>
-            <div className="col">
-              <h6>Số điện thoại</h6>
-            </div>
-          </div>
-          <div className="row">
-            <div className="col">
-              <div className="field">
-                <input
-                  type="email"
-                  className="form-control"
-                  required
-                  placeholder="Email"
-                  name="email"
-                  onChange={(event) => setEmail(event.target.value)}
-                ></input>
-              </div>
-            </div>
-            <div className="col">
-              <div className="field">
-                <input
-                  type="text"
-                  className="form-control"
-                  required
-                  placeholder="Số điện thoại"
-                  name="phone"
-                  onChange={(event) => setPhoneNumber(event.target.value)}
-                ></input>
-              </div>
-            </div>
-          </div>
-          <div className="row">
-            <div className="col">
-              <h6>Mật khẩu</h6>
-            </div>
-            <div className="col">
-              <h6>Xác nhận mật khẩu</h6>
-            </div>
-          </div>
-          <div className="row">
-            <div className="col">
-              <div className="field">
-                <input
-                  type="password"
-                  className="form-control"
-                  required
-                  placeholder="Mật khẩu"
-                  name="password"
-                  onChange={(event) => setPassword(event.target.value)}
-                ></input>
-              </div>
-            </div>
-            <div className="col">
-              <div className="field">
-                <input
-                  type="password"
-                  className="form-control"
-                  required
-                  placeholder="Xác nhận mật khẩu"
-                  onChange={(event) => setconfPassword(event.target.value)}
-                ></input>
-              </div>
-            </div>
-          </div>
-          <div className="row">
-            <div className="col">
-              <h6>Tuổi</h6>
-            </div>
-            <div className="col">
-              <h6>Giới tính</h6>
+            <div className="register-field">
+              <label>Tên</label>
+              <input
+                type="text"
+                required
+                placeholder="Tên"
+                onChange={(e) => setLastName(e.target.value)}
+              />
             </div>
           </div>
 
-          <div className="row">
-            <div className="col">
-              <div className="field">
-                <input
-                  type="text"
-                  className="form-control"
-                  required
-                  placeholder="Tuổi"
-                  name="age"
-                  onChange={(event) => setAge(event.target.value)}
-                ></input>
-              </div>
+          <div className="register-row">
+            <div className="register-field">
+              <label>Email</label>
+              <input
+                type="email"
+                required
+                placeholder="Email"
+                name="email"
+                onChange={(e) => setEmail(e.target.value)}
+              />
             </div>
-            <div className="col">
-              <div className="field">
-                <select
-                  name="gender"
-                  className="form-control"
-                  value={gender}
-                  onChange={(event) => setGender(event.target.value)}
-                  required
-                >
-                  <option value="male">Nam</option>
-                  <option value="female">Nữ</option>
-                  <option value="other">Khác</option>
-                </select>
-              </div>
+            <div className="register-field">
+              <label>Số điện thoại</label>
+              <input
+                type="text"
+                required
+                placeholder="Số điện thoại"
+                name="phone"
+                onChange={(e) => setPhoneNumber(e.target.value)}
+              />
             </div>
           </div>
-          <div className="field space">
-            <input type="submit" value="Đăng ký" />
+
+          <div className="register-row">
+            <div className="register-field">
+              <label>Mật khẩu</label>
+              <input
+                type="password"
+                required
+                placeholder="Mật khẩu"
+                name="password"
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+            <div className="register-field">
+              <label>Xác nhận mật khẩu</label>
+              <input
+                type="password"
+                required
+                placeholder="Nhập lại mật khẩu"
+                onChange={(e) => setconfPassword(e.target.value)}
+              />
+            </div>
           </div>
+
+          <div className="register-row">
+            <div className="register-field">
+              <label>Tuổi</label>
+              <input
+                type="number"
+                required
+                placeholder="Tuổi"
+                name="age"
+                min="1"
+                max="120"
+                onChange={(e) => setAge(e.target.value)}
+              />
+            </div>
+            <div className="register-field">
+              <label>Giới tính</label>
+              <select
+                name="gender"
+                value={gender}
+                onChange={(e) => setGender(e.target.value)}
+                required
+              >
+                <option value="male">Nam</option>
+                <option value="female">Nữ</option>
+                <option value="other">Khác</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" className="register-submit">
+            Tạo tài khoản
+          </button>
         </form>
-        <div className="signup space">
-          Đã có tài khoản?
-          <a href="/">Đăng nhập</a>
-        </div>
+
+        <p className="register-footer">
+          Đã có tài khoản?{" "}
+          <a href="/login">Đăng nhập</a>
+        </p>
       </div>
     </div>
   );

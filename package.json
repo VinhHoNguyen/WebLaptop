@@ -11,9 +11,7 @@
     "docker:logs": "docker compose -f docker-compose.v2.yml logs -f",
     "docker:v2:up": "docker compose -f docker-compose.v2.yml up -d --build",
     "docker:v2:down": "docker compose -f docker-compose.v2.yml down",
-    "docker:v2:logs": "docker compose -f docker-compose.v2.yml logs -f",
-    "docker:prod:up": "docker compose -f docker-compose.prod.yml up -d",
-    "docker:prod:down": "docker compose -f docker-compose.prod.yml down"
+    "docker:v2:logs": "docker compose -f docker-compose.v2.yml logs -f"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

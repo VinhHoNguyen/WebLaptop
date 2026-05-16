@@ -30,6 +30,12 @@ const OrderAPI = {
     const res = await axiosClient.patch(url);
     return res as any;
   },
+
+  cancel_order_user: async (orderId: string): Promise<any> => {
+    const url = `/api/Payment/orders/${orderId}/status`;
+    const res = await axiosClient.patch(url, { status: "Cancelled" });
+    return res as any;
+  },
 };
 
 export default OrderAPI;

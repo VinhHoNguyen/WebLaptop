@@ -3,72 +3,72 @@
     "_id": {
       "$oid": "7473d2aeff68755df2527e60"
     },
-    "name": "ApexBook 14 Air",
+    "name": "ASUS ZenBook 14 OLED UX3405MA",
     "price": 799000,
     "stock": 18,
-    "description": "14-inch ultrabook with 2.5K display, aluminum chassis, and 12-hour battery life for daily productivity and travel.",
+    "description": "14-inch ultrabook with stunning 2.8K OLED display, Intel Core Ultra 7, and all-day battery life in a featherlight aluminum chassis.",
     "category": "Ultrabook",
-    "image": "https://cdnv2.tgdd.vn/mwg-static/dmx/Products/Images/44/321468/asus-zenbook-14-oled-ux3405ma-ultra-7-pp152w-thumb-638763543290373422-600x600.jpg",
+    "image": "https://dlcdnwebimgs.asus.com/gain/caf912a5-5bc2-4a81-ac8f-6339e488f549/w800",
     "specs": {
-      "brand": "Apex",
-      "cpu": "Intel Core i5-1340P",
-      "gpu": "Intel Iris Xe",
+      "brand": "ASUS",
+      "cpu": "Intel Core Ultra 7 155H",
+      "gpu": "Intel Arc Graphics",
       "ramGb": 16,
       "storageGb": 512,
-      "display": "14\" 2560x1600 IPS"
+      "display": "14\" 2880x1800 OLED 120Hz"
     }
   },
   {
     "_id": {
       "$oid": "7473e569ff68755df2527e62"
     },
-    "name": "Titan Pro 16",
+    "name": "ASUS ROG Strix G16 G614JV",
     "price": 1799000,
     "stock": 6,
-    "description": "16-inch gaming laptop with high-refresh display, dedicated GPU, and advanced cooling for sustained performance.",
+    "description": "16-inch gaming powerhouse with RTX 4060, 165Hz QHD display, and ROG's advanced MUX Switch for maximum frame rates.",
     "category": "Gaming",
-    "image": "https://cdnv2.tgdd.vn/mwg-static/tgdd/Products/Images/44/333095/asus-rog-strix-g16-g614jv-i7-n3515w-170225-114616-616-600x600.jpg",
+    "image": "https://dlcdnwebimgs.asus.com/gain/399F81FC-CECA-4774-A85C-87EDAEBAB31D/w800",
     "specs": {
-      "brand": "Titan",
-      "cpu": "Intel Core i7-14650HX",
-      "gpu": "NVIDIA GeForce RTX 4070 8GB",
-      "ramGb": 32,
-      "storageGb": 1024,
-      "display": "16\" 2560x1600 IPS"
+      "brand": "ASUS",
+      "cpu": "Intel Core i7-13650HX",
+      "gpu": "NVIDIA GeForce RTX 4060 8GB",
+      "ramGb": 16,
+      "storageGb": 512,
+      "display": "16\" 2560x1600 IPS 165Hz"
     }
   },
   {
     "_id": {
       "$oid": "7473e585ff68755df2527e63"
     },
-    "name": "Nova Studio 15",
+    "name": "ASUS Vivobook Pro 15 OLED K6502VV",
     "price": 1499000,
     "stock": 9,
-    "description": "Creator laptop with color-accurate panel, fast SSD, and strong multicore CPU for design and editing workloads.",
+    "description": "Creator laptop with 2.8K OLED display covering 100% DCI-P3, Core i9-13900H, and RTX 4060 for demanding video editing and 3D workflows.",
     "category": "Creator",
-    "image": "https://cdn.tgdd.vn/Products/Images/44/255615/asus-vivobook-pro-15-oled-k3500pc-i7-l1046t-021121-035044-600x600.jpg",
+    "image": "https://cdn.mos.cms.futurecdn.net/QXXWK59qvPKparPGk8pR84.jpg",
     "specs": {
-      "brand": "Nova",
-      "cpu": "Intel Core i7-13700H",
+      "brand": "ASUS",
+      "cpu": "Intel Core i9-13900H",
       "gpu": "NVIDIA GeForce RTX 4060 8GB",
-      "ramGb": 32,
+      "ramGb": 16,
       "storageGb": 1024,
-      "display": "15.6\" 3840x2160 OLED"
+      "display": "15.6\" 2880x1620 OLED 120Hz"
     }
   },
   {
     "_id": {
       "$oid": "7473e5a7ff68755df2527e64"
     },
-    "name": "Stride Business 14",
+    "name": "Lenovo ThinkBook 14 G4 IAP",
     "price": 1049000,
     "stock": 14,
-    "description": "Business-class 14-inch laptop with TPM security, long battery life, and a full set of ports.",
+    "description": "Business-class 14-inch laptop with Rapid Charge, robust MIL-SPEC durability, and a precision touchpad for enterprise productivity.",
     "category": "Business",
-    "image": "https://cdn.tgdd.vn/Products/Images/44/236960/lenovo-thinkbook-14-g2-itl-i5-20vd003kvn-600x600.jpg",
+    "image": "https://cdn.mos.cms.futurecdn.net/aLuoXA7wKjMs7GXgEqYEA4.jpg",
     "specs": {
-      "brand": "Stride",
-      "cpu": "Intel Core i5-1335U",
+      "brand": "Lenovo",
+      "cpu": "Intel Core i5-1235U",
       "gpu": "Intel Iris Xe",
       "ramGb": 16,
       "storageGb": 512,
@@ -79,37 +79,37 @@
     "_id": {
       "$oid": "7473e65bff68755df2527e65"
     },
-    "name": "FlexGo 13 2-in-1",
+    "name": "HP Envy x360 13.3\" 2-in-1",
     "price": 899000,
     "stock": 10,
-    "description": "Convertible 13-inch laptop with 360-degree hinge, stylus support, and lightweight design.",
+    "description": "Compact 360-degree convertible with OLED touchscreen, AMD Ryzen 7, and HP's Tilt Pen support in a sleek aluminum design.",
     "category": "2-in-1",
-    "image": "https://cdnv2.tgdd.vn/mwg-static/tgdd/Products/Images/44/338208/hp-envy-x360-14-fa0047au-r7-a19bppa-thumb-638833332894402249-600x600.jpg",
+    "image": "https://cdn.mos.cms.futurecdn.net/RruGNsC2gGYEvuV7Tohnhf.jpg",
     "specs": {
-      "brand": "FlexGo",
-      "cpu": "Intel Core i5-1330U",
-      "gpu": "Intel Iris Xe",
+      "brand": "HP",
+      "cpu": "AMD Ryzen 7 7730U",
+      "gpu": "AMD Radeon Graphics",
       "ramGb": 16,
       "storageGb": 512,
-      "display": "13.3\" 1920x1200 IPS Touch"
+      "display": "13.3\" 1920x1200 OLED Touch"
     }
   },
   {
     "_id": {
       "$oid": "7473e662ff68755df2527e66"
     },
-    "name": "Campus Lite 15",
+    "name": "Acer Aspire 3 A315-59",
     "price": 549000,
     "stock": 25,
-    "description": "Affordable 15-inch laptop for students with reliable performance for study, browsing, and streaming.",
+    "description": "Reliable budget laptop for students with a bright 15.6\" display, fast SSD, and comfortable keyboard for everyday study and browsing.",
     "category": "Student",
-    "image": "https://cdnv2.tgdd.vn/mwg-static/tgdd/Products/Images/44/304543/acer-aspire-3-a315-59-5283-i5-nxk6tsv00b-thumb-638754896181678129-600x600.jpg",
+    "image": "https://cdn.mos.cms.futurecdn.net/Bf4HYF7M8oKuEgW3bibUUT.jpg",
     "specs": {
-      "brand": "Campus",
-      "cpu": "Intel Core i3-1215U",
-      "gpu": "Intel UHD",
+      "brand": "Acer",
+      "cpu": "Intel Core i5-1235U",
+      "gpu": "Intel Iris Xe",
       "ramGb": 8,
-      "storageGb": 256,
+      "storageGb": 512,
       "display": "15.6\" 1920x1080 IPS"
     }
   },
@@ -117,54 +117,54 @@
     "_id": {
       "$oid": "7473e66dff68755df2527e67"
     },
-    "name": "Vortex RTX 17",
+    "name": "MSI Raider GE78 HX",
     "price": 2299000,
     "stock": 4,
-    "description": "17-inch gaming machine with high-end GPU, mechanical-style keyboard, and aggressive thermal headroom.",
+    "description": "17-inch flagship gaming laptop with RTX 4090, Intel Core i9-14900HX, and a 240Hz QHD display for the ultimate gaming experience.",
     "category": "Gaming",
-    "image": "https://cdn.tgdd.vn/Products/Images/44/305663/asus-gaming-rog-strix-g16-g614ji-i7-n4084w-thumb-1-600x600.jpg",
+    "image": "https://cdn.mos.cms.futurecdn.net/Jo3oJJHze9CLLwJBRgBK9C.jpg",
     "specs": {
-      "brand": "Vortex",
-      "cpu": "AMD Ryzen 9 7940HX",
-      "gpu": "NVIDIA GeForce RTX 4080 12GB",
+      "brand": "MSI",
+      "cpu": "Intel Core i9-14900HX",
+      "gpu": "NVIDIA GeForce RTX 4090 16GB",
       "ramGb": 32,
       "storageGb": 2048,
-      "display": "17.3\" 2560x1440 IPS"
+      "display": "17\" 2560x1600 IPS 240Hz"
     }
   },
   {
     "_id": {
       "$oid": "7473e6a1ff68755df2527e68"
     },
-    "name": "ZenBooker 13",
+    "name": "ASUS ZenBook S 13 OLED UX5304VA",
     "price": 899000,
     "stock": 11,
-    "description": "Compact 13-inch ultrabook with OLED panel and fast charging for on-the-go workflows.",
+    "description": "World's slimmest 13.3-inch OLED laptop at just 1cm thick, Intel Evo certified with Wi-Fi 6E and Thunderbolt 4 for professional mobility.",
     "category": "Ultrabook",
-    "image": "https://cdnv2.tgdd.vn/mwg-static/tgdd/Products/Images/44/338279/lenovo-ideapad-slim-5-oled-15arp10-r7-83j3002svn-thumb-638851465607267025-600x600.jpg",
+    "image": "https://dlcdnwebimgs.asus.com/gain/7497bea2-66ac-4731-bfe6-67209316b60f/w800",
     "specs": {
-      "brand": "ZenBooker",
-      "cpu": "Intel Core i7-1360P",
+      "brand": "ASUS",
+      "cpu": "Intel Core i7-1355U",
       "gpu": "Intel Iris Xe",
       "ramGb": 16,
       "storageGb": 512,
-      "display": "13.3\" 2880x1800 OLED"
+      "display": "13.3\" 2880x1800 OLED 60Hz"
     }
   },
   {
     "_id": {
       "$oid": "7474b123956ae27b049d64d0"
     },
-    "name": "Quanta Workstation 16",
+    "name": "HP ZBook Firefly 16 G10",
     "price": 1999000,
     "stock": 5,
-    "description": "Mobile workstation with ECC-capable memory support and ISV-certified graphics for pro apps.",
+    "description": "Professional 16-inch mobile workstation with ISV-certified NVIDIA RTX A500, ECC memory support, and enterprise security features.",
     "category": "Workstation",
-    "image": "https://cdn.tgdd.vn/Products/Images/44/264438/hp-zbook-firefly-14-g8-i5-275v5av-141221-042207-600x600.jpg",
+    "image": "https://cdn.mos.cms.futurecdn.net/EcieHkzEQLL6cNPsmMLWjh.jpg",
     "specs": {
-      "brand": "Quanta",
-      "cpu": "Intel Core i7-13850HX",
-      "gpu": "NVIDIA RTX 2000 Ada 8GB",
+      "brand": "HP",
+      "cpu": "Intel Core i7-1355U",
+      "gpu": "NVIDIA RTX A500 4GB",
       "ramGb": 32,
       "storageGb": 1024,
       "display": "16\" 2560x1600 IPS"
@@ -174,56 +174,56 @@
     "_id": {
       "$oid": "7474b15c956ae27b049d64d1"
     },
-    "name": "Pulse Slim 14",
+    "name": "Lenovo IdeaPad Slim 5 14\" Gen 9",
     "price": 699000,
     "stock": 20,
-    "description": "Everyday 14-inch laptop with quiet cooling, solid battery, and a bright matte display.",
+    "description": "Everyday 14-inch laptop with AMD Ryzen 5, quiet fan, solid battery life, and a vivid display for work, streaming, and light tasks.",
     "category": "Everyday",
-    "image": "https://cdn.tgdd.vn/Products/Images/44/232192/lenovo-ideapad-slim-5-15itl05-i5-82fg001pvn-144320-064322-600x600.jpg",
+    "image": "https://cdn.mos.cms.futurecdn.net/oaKLfmbjEJxthT2E7EW5wk.jpg",
     "specs": {
-      "brand": "Pulse",
+      "brand": "Lenovo",
       "cpu": "AMD Ryzen 5 7530U",
       "gpu": "AMD Radeon Graphics",
       "ramGb": 16,
       "storageGb": 512,
-      "display": "14\" 1920x1200 IPS"
+      "display": "14\" 1920x1080 IPS"
     }
   },
   {
     "_id": {
       "$oid": "7474b1a4956ae27b049d64d2"
     },
-    "name": "Creator X15",
+    "name": "ASUS Vivobook Pro 14 OLED M3401QA",
     "price": 1899000,
     "stock": 7,
-    "description": "High-performance creator laptop with 100% DCI-P3 panel and fast PCIe 4.0 storage.",
+    "description": "14-inch creator laptop with 2.8K OLED Pantone validated display, Ryzen 9, and RTX 3050 Ti for portable creative work.",
     "category": "Creator",
-    "image": "https://cdn.tgdd.vn/Products/Images/44/264943/asus-vivobook-pro-14x-oled-m7400qc-r5-m01810-thumb-600x600.jpg",
+    "image": "https://cdn.mos.cms.futurecdn.net/x8wmNXyYrt2Ybz8FH8vVy9.jpg",
     "specs": {
-      "brand": "Creator",
-      "cpu": "Intel Core i9-13900H",
-      "gpu": "NVIDIA GeForce RTX 4070 8GB",
-      "ramGb": 32,
-      "storageGb": 2048,
-      "display": "15.6\" 3200x2000 OLED"
+      "brand": "ASUS",
+      "cpu": "AMD Ryzen 9 5900HX",
+      "gpu": "NVIDIA GeForce RTX 3050 Ti 4GB",
+      "ramGb": 16,
+      "storageGb": 512,
+      "display": "14\" 2880x1800 OLED 90Hz"
     }
   },
   {
     "_id": {
       "$oid": "7474b1b3956ae27b049d64d3"
     },
-    "name": "OfficeMate 15",
+    "name": "HP ProBook 450 G10",
     "price": 649000,
     "stock": 13,
-    "description": "Reliable 15-inch business laptop with numeric keypad and durable hinge design.",
+    "description": "15-inch business laptop with HP Wolf Security, a numeric keypad, and MIL-SPEC tested durability for office and field use.",
     "category": "Business",
-    "image": "https://cdn.tgdd.vn/Products/Images/44/291154/hp-probook-450-g9-i5-6m0y9pa-thumb-1-600x600.jpg",
+    "image": "https://cdn.mos.cms.futurecdn.net/ZMBpUct8zu2pKxSESUt3eS.jpg",
     "specs": {
-      "brand": "OfficeMate",
-      "cpu": "Intel Core i5-1235U",
+      "brand": "HP",
+      "cpu": "Intel Core i5-1335U",
       "gpu": "Intel Iris Xe",
-      "ramGb": 16,
-      "storageGb": 512,
+      "ramGb": 8,
+      "storageGb": 256,
       "display": "15.6\" 1920x1080 IPS"
     }
   },
@@ -231,76 +231,76 @@
     "_id": {
       "$oid": "7474b217956ae27b049d64d4"
     },
-    "name": "SwiftBook 14",
+    "name": "Lenovo IdeaPad Slim 5 OLED 16ARP8",
     "price": 749000,
     "stock": 15,
-    "description": "Thin-and-light laptop with fast boot, Wi-Fi 6, and a quiet fan profile.",
+    "description": "Thin 16-inch ultrabook with a vibrant 3.2K OLED display, Ryzen 7, Wi-Fi 6E, and a compact build for on-the-go productivity.",
     "category": "Ultrabook",
-    "image": "https://cdnv2.tgdd.vn/mwg-static/tgdd/Products/Images/44/338279/lenovo-ideapad-slim-5-oled-15arp10-r7-83j3002svn-thumb-638851465607267025-600x600.jpg",
+    "image": "https://cdn.mos.cms.futurecdn.net/jcPRzubvsQxtrPBoEnAw99.jpg",
     "specs": {
-      "brand": "SwiftBook",
+      "brand": "Lenovo",
       "cpu": "AMD Ryzen 7 7730U",
       "gpu": "AMD Radeon Graphics",
       "ramGb": 16,
       "storageGb": 512,
-      "display": "14\" 1920x1200 IPS"
+      "display": "16\" 3200x2000 OLED 60Hz"
     }
   },
   {
     "_id": {
       "$oid": "7474b22b956ae27b049d64d5"
     },
-    "name": "Legion Edge 16",
+    "name": "Lenovo Legion Pro 5 16IRX9",
     "price": 1699000,
     "stock": 8,
-    "description": "Gaming laptop with high-refresh QHD display, per-key RGB, and fast 1TB SSD.",
+    "description": "High-performance 16-inch gaming laptop with RTX 4070, per-key RGB, 240Hz QHD display, and Legion ColdFront 5.0 cooling.",
     "category": "Gaming",
-    "image": "https://cdnv2.tgdd.vn/mwg-static/tgdd/Products/Images/44/326497/lenovo-legion-pro-5-16irx9-i9-83df0047vn-070525-115201-217-600x600.jpg",
+    "image": "https://cdn.mos.cms.futurecdn.net/RFXJoJaU87GYDmaXqNatC7.jpg",
     "specs": {
-      "brand": "Legion",
-      "cpu": "Intel Core i7-14650HX",
-      "gpu": "NVIDIA GeForce RTX 4060 8GB",
-      "ramGb": 16,
+      "brand": "Lenovo",
+      "cpu": "Intel Core i9-14900HX",
+      "gpu": "NVIDIA GeForce RTX 4070 8GB",
+      "ramGb": 32,
       "storageGb": 1024,
-      "display": "16\" 2560x1600 IPS"
+      "display": "16\" 2560x1600 IPS 240Hz"
     }
   },
   {
     "_id": {
       "$oid": "7474b2c6956ae27b049d64d6"
     },
-    "name": "StudioBook 16 Pro",
+    "name": "ASUS Vivobook Pro 16X OLED N7600QC",
     "price": 2199000,
     "stock": 6,
-    "description": "Creator-focused 16-inch laptop with high brightness display and extra I/O for docks.",
+    "description": "16-inch flagship creator laptop with 3.2K OLED display, Ryzen 9, RTX 3050 Ti, and a large multi-touch trackpad for professionals.",
     "category": "Creator",
-    "image": "https://cdn.tgdd.vn/Products/Images/44/274243/asus-vivobook-pro-16x-oled-m7600qc-r5-l2077w-110322-113431-600x600.jpg",
+    "image": "https://cdn.mos.cms.futurecdn.net/onDd8iLB58HSXMpcUumpon.jpg",
     "specs": {
-      "brand": "StudioBook",
-      "cpu": "AMD Ryzen 9 7945HX",
-      "gpu": "NVIDIA GeForce RTX 4070 8GB",
+      "brand": "ASUS",
+      "cpu": "AMD Ryzen 9 5900HX",
+      "gpu": "NVIDIA GeForce RTX 3050 Ti 4GB",
       "ramGb": 32,
       "storageGb": 1024,
-      "display": "16\" 3840x2400 OLED"
+      "display": "16\" 3200x2000 OLED 60Hz"
     }
   },
   {
     "_id": {
       "$oid": "7474b2e8956ae27b049d64d7"
     },
-    "name": "FoldPad 14",
+    "name": "Lenovo Yoga 7 2-in-1 14IML9",
     "price": 999000,
     "stock": 9,
-    "description": "2-in-1 laptop with pen support, 10-point touch, and premium audio.",
+    "description": "Premium 14-inch convertible with OLED touchscreen, Intel Core Ultra 7, integrated stylus pen, and a 360-degree hinge for any mode.",
     "category": "2-in-1",
-    "image": "https://cdnv2.tgdd.vn/mwg-static/tgdd/Products/Images/44/338208/hp-envy-x360-14-fa0047au-r7-a19bppa-thumb-638833332894402249-600x600.jpg",
+    "image": "https://cdn.mos.cms.futurecdn.net/vwj365syCb9cG2NWLszXF9.jpg",
     "specs": {
-      "brand": "FoldPad",
-      "cpu": "Intel Core i7-1355U",
-      "gpu": "Intel Iris Xe",
+      "brand": "Lenovo",
+      "cpu": "Intel Core Ultra 7 155U",
+      "gpu": "Intel Arc Graphics",
       "ramGb": 16,
       "storageGb": 512,
-      "display": "14\" 1920x1200 IPS Touch"
+      "display": "14\" 1920x1200 OLED Touch"
     }
   }
 ]

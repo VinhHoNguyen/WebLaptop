@@ -93,6 +93,10 @@ app.use('/api/Payment', OrderAPI)
 app.use('/api/DetailOrder', Detail_OrderAPI)
 app.use('/cart', CartAPI)
 
+// Auto-migrate: add image column to order_details if not present
+const pool = require('./config/db_conn');
+pool.query(`ALTER TABLE order_details ADD COLUMN image TEXT NULL`).catch(() => {});
+
 app.use('/', OrderAPI)
 
 app.set('io', io);
