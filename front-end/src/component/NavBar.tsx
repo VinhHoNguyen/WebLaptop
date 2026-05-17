@@ -4,7 +4,7 @@ import "../Style/NavBar.css";
 import profileMale from "../assets/profile.jpg";
 import profileFemale from "../assets/profileGirl.jpg";
 import OrderAPI from "../api/OrderAPI";
-import { getCartKey, type LocalCartItem } from "../utils/cartLocal";
+import CartsLocal, { getCartKey, type LocalCartItem } from "../utils/cartLocal";
 import {
   getSimStatus,
   markOrderCancelled,
@@ -23,8 +23,10 @@ type DBOrder = {
   create_time: string;
 };
 
+const hasToken = () => typeof window !== "undefined" && !!localStorage.getItem("token");
+
 function NavBar() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(hasToken);
   const [username, setUsername] = useState("");
   const [avatarSrc, setAvatarSrc] = useState(profileMale);
   const [showGreeting, setShowGreeting] = useState(false);
@@ -40,7 +42,17 @@ function NavBar() {
 
   const countChange = useSelector((state: RootState) => state.Count.isLoad);
 
-  const refreshCart = () => {
+  const refreshCart = async () => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      try {
+        const serverCart = await CartsLocal.fetchFromServer();
+        setCartItems(serverCart);
+        return;
+      } catch {
+        // fall through to local cache
+      }
+    }
     const cartKey = getCartKey();
     const raw = localStorage.getItem(cartKey);
     try {
@@ -267,10 +279,25 @@ function NavBar() {
             </div>
 
             {!isLoggedIn && (
-              <a href="/login" className="nav-action-btn nav-login-btn">Đăng nhập</a>
+              <a href="/login" className="nav-action-btn nav-login-btn">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16" height="16"
+                  viewBox="0 0 24 24"
+                  fill="none" stroke="currentColor"
+                  strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                  <polyline points="10 17 15 12 10 7" />
+                  <line x1="15" y1="12" x2="3" y2="12" />
+                </svg>
+                <span>Đăng nhập</span>
+              </a>
             )}
 
             {/* Profile avatar + greeting bubble */}
+            {isLoggedIn && (
             <div className="nav-profile-wrapper" ref={dropdownRef}>
               <button
                 className="nav-action-btn nav-profile-btn"
@@ -315,6 +342,7 @@ function NavBar() {
                 </div>
               )}
             </div>
+            )}
           </div>
 
           <a className="menu-trigger"><span>Menu</span></a>

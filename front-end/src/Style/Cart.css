@@ -130,9 +130,10 @@
 }
 
 .bill-total {
-  color: var(--accent-2);
+  color: var(--c-amber);
   font-weight: 700;
-  font-size: 20px;
+  font-size: 22px;
+  letter-spacing: 0.3px;
 }
 
 .cart-header-footer {
@@ -151,6 +152,57 @@
   border: none;
   border-radius: 12px;
   cursor: pointer;
+}
+
+.cart-qty-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cart-qty-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-alt);
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.cart-qty-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cart-qty-value {
+  min-width: 24px;
+  text-align: center;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.cart-remove-btn {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--accent-2, #fa4299);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cart-remove-btn:hover:not(:disabled) {
+  background: rgba(250, 66, 153, 0.08);
+}
+
+.cart-remove-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 @media (max-width: 768px) {

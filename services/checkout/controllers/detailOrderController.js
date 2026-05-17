@@ -2,6 +2,7 @@ const {
     getOrderDetailsByOrderId,
     createDetailOrder,
 } = require('../repositories/orderRepository')
+const { decrementStock } = require('../services/productClient')
 const { sendSuccess, sendError } = require('../utils/response')
 
 module.exports.detail = async (req, res) => {
@@ -28,6 +29,20 @@ module.exports.detail = async (req, res) => {
 module.exports.post_detail_order = async (req, res) => {
     try {
         const detail_order = await createDetailOrder(req.body)
+
+        const productId = req.body?.id_product
+        const count = Number(req.body?.count)
+        if (productId && Number.isFinite(count) && count > 0) {
+            try {
+                await decrementStock(productId, count)
+            } catch (stockError) {
+                console.error('Failed to decrement product stock', {
+                    productId,
+                    count,
+                    message: stockError?.message,
+                })
+            }
+        }
 
         return sendSuccess(res, req, {
             status: 201,

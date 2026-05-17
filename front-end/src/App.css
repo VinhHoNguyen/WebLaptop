@@ -10,13 +10,38 @@
 	--accent-2: #fa4299;
 	--accent-3: #31b4ff;
 	--accent-contrast: #0b0f18;
-	--accent-gradient: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+	/* Kept as a token name for backwards compatibility, but now a SOLID color
+	   so the site relies on the wider palette below instead of gradients. */
+	--accent-gradient: var(--accent-2);
 	--accent-soft: rgba(164, 69, 178, 0.22);
 	--accent-soft-2: rgba(250, 66, 153, 0.18);
 	--overlay: rgba(8, 10, 18, 0.75);
 	--surface-glass: rgba(18, 22, 36, 0.78);
 	--danger: #ff6b6b;
 	--success: #2dd4bf;
+
+	/* Extended solid palette — for variety without gradients */
+	--c-violet: #a855f7;
+	--c-pink: #ec4899;
+	--c-rose: #f43f5e;
+	--c-coral: #fb7185;
+	--c-amber: #f59e0b;
+	--c-gold: #fbbf24;
+	--c-lime: #a3e635;
+	--c-emerald: #10b981;
+	--c-teal: #14b8a6;
+	--c-sky: #38bdf8;
+	--c-indigo: #818cf8;
+	--c-lavender: #c4b5fd;
+
+	/* Soft tints (rgba) for backgrounds */
+	--c-violet-soft: rgba(168, 85, 247, 0.18);
+	--c-teal-soft: rgba(20, 184, 166, 0.18);
+	--c-amber-soft: rgba(245, 158, 11, 0.18);
+	--c-sky-soft: rgba(56, 189, 248, 0.18);
+	--c-rose-soft: rgba(244, 63, 94, 0.18);
+	--c-lime-soft: rgba(163, 230, 53, 0.18);
+	--c-indigo-soft: rgba(129, 140, 248, 0.18);
  }
 
  html,

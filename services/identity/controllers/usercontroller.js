@@ -6,6 +6,9 @@ require("dotenv").config();
 
 const updateFields = ["firstName", "lastName", "email", "age", "phone", "gender", "role", "status"];
 
+const normalizeEmail = (value) =>
+  typeof value === "string" ? value.trim().toLowerCase() : value;
+
 const pickAllowedFields = (payload) => {
   return updateFields.reduce((acc, field) => {
     if (Object.prototype.hasOwnProperty.call(payload, field)) {
@@ -138,7 +141,8 @@ const deleteUserById = async (req, res) => {
 
 const userRegister = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const email = normalizeEmail(req.body?.email);
+    const { password } = req.body;
     if (!email || !password) {
       return res.status(400).json({ message: "email and password are required" });
     }
@@ -180,7 +184,8 @@ const userRegister = async (req, res) => {
 
 const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const email = normalizeEmail(req.body?.email);
+    const { password } = req.body;
     const [rows] = await pool.query(
       `SELECT id, email, password, firstName, lastName, age, phone, gender, role, status
        FROM users

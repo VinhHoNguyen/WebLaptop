@@ -73,13 +73,19 @@ const CartAPI = {
     return results;
   },
 
-  Update_Cart_Item: async () => {
-    return Promise.resolve({ ok: true });
+  Update_Cart_Item: (productId: string, count: number) => {
+    const url = `/cart/${productId}`;
+    return cartClient.put(url, { count });
+  },
+
+  Decrement_Cart_Item: (productId: string) => {
+    const url = `/cart/${productId}`;
+    return cartClient.delete(url);
   },
 
   Remove_From_Cart: (productId: string) => {
     const url = `/cart/${productId}`;
-    return cartClient.delete(url);
+    return cartClient.put(url, { count: 0 });
   },
 
   Clear_Cart: () => {

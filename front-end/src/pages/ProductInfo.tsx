@@ -51,6 +51,12 @@ function ProductInfo() {
   }, []);
 
   const onSubmithandler = async () => {
+    if (!localStorage.getItem("token")) {
+      alert("Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng");
+      window.location.href = "/login";
+      return;
+    }
+
     const stockValue = Number.isFinite(Number(inputValue.stock)) ? Number(inputValue.stock) : null;
     if (stockValue !== null && stockValue <= 0) {
       alert("Sản phẩm đã hết hàng");
@@ -77,6 +83,12 @@ function ProductInfo() {
       await CartsLocal.addProduct(cartItem);
       alert("Đã thêm vào giỏ hàng");
     } catch (error) {
+      const code = (error as { code?: string })?.code;
+      if (code === "AUTH_REQUIRED") {
+        alert("Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng");
+        window.location.href = "/login";
+        return;
+      }
       console.error("Error:", error);
       alert("Không thể thêm vào giỏ hàng");
     }

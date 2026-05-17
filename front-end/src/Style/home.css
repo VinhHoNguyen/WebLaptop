@@ -67,12 +67,15 @@ img {
 .home-hero-title {
   font-size: 52px;
   font-weight: 800;
-  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--c-amber);
   margin-bottom: 14px;
   line-height: 1.1;
+  letter-spacing: -0.5px;
+}
+
+.home-hero-title em {
+  font-style: normal;
+  color: var(--c-sky);
 }
 
 .home-hero-sub {
@@ -151,10 +154,12 @@ img {
 }
 
 .cat-pill {
+  --pill-color: var(--c-pink);
+  --pill-soft: var(--c-violet-soft);
   padding: 8px 20px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.06);
   color: var(--text);
   font-size: 13.5px;
   font-weight: 500;
@@ -165,17 +170,29 @@ img {
   line-height: 1;
 }
 
+/* Rotate accent color per pill — gives the row visual variety without gradients */
+.cat-pill:nth-child(1) { --pill-color: var(--c-pink);    --pill-soft: var(--c-rose-soft); }
+.cat-pill:nth-child(2) { --pill-color: var(--c-teal);    --pill-soft: var(--c-teal-soft); }
+.cat-pill:nth-child(3) { --pill-color: var(--c-amber);   --pill-soft: var(--c-amber-soft); }
+.cat-pill:nth-child(4) { --pill-color: var(--c-sky);     --pill-soft: var(--c-sky-soft); }
+.cat-pill:nth-child(5) { --pill-color: var(--c-violet);  --pill-soft: var(--c-violet-soft); }
+.cat-pill:nth-child(6) { --pill-color: var(--c-lime);    --pill-soft: var(--c-lime-soft); }
+.cat-pill:nth-child(7) { --pill-color: var(--c-indigo);  --pill-soft: var(--c-indigo-soft); }
+.cat-pill:nth-child(8) { --pill-color: var(--c-coral);   --pill-soft: var(--c-rose-soft); }
+.cat-pill:nth-child(9) { --pill-color: var(--c-emerald); --pill-soft: var(--c-teal-soft); }
+
 .cat-pill:hover {
-  border-color: rgba(250, 66, 153, 0.4);
-  color: var(--text);
-  background: rgba(250, 66, 153, 0.08);
+  border-color: var(--pill-color);
+  color: var(--pill-color);
+  background: var(--pill-soft);
 }
 
 .cat-pill.active {
-  background: var(--accent-gradient);
-  border-color: transparent;
-  color: #fff;
-  box-shadow: 0 4px 14px rgba(164, 69, 178, 0.35);
+  background: var(--pill-color);
+  border-color: var(--pill-color);
+  color: var(--accent-contrast);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+  font-weight: 600;
 }
 
 /* ══════════════════════ Filter Toolbar ══════════════════════ */
@@ -395,13 +412,22 @@ img {
   font-weight: 600;
 }
 
+.game-card-category {
+  color: var(--c-sky);
+  font-weight: 500;
+}
+
 .game-card-price {
   margin-top: auto;
-  color: var(--accent-2);
+  color: var(--c-amber);
   font-size: 20px;
   font-weight: 700;
   text-align: right;
   line-height: 1;
+}
+
+.game-card-stock {
+  color: var(--c-emerald);
 }
 
 /* ══════════════════════ Pagination ══════════════════════ */
@@ -433,10 +459,11 @@ img {
 }
 
 .page-btn.active {
-  background: var(--accent-gradient);
-  border-color: transparent;
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(164, 69, 178, 0.3);
+  background: var(--c-sky);
+  border-color: var(--c-sky);
+  color: var(--accent-contrast);
+  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
+  font-weight: 600;
 }
 
 .page-btn:disabled {
@@ -449,9 +476,9 @@ img {
   margin-top: 10px;
   height: 38px;
   border-radius: 12px;
-  border: 1px solid rgba(250, 66, 153, 0.35);
-  background: linear-gradient(135deg, rgba(164, 69, 178, 0.2) 0%, rgba(250, 66, 153, 0.15) 100%);
-  color: var(--text);
+  border: 1px solid var(--c-teal);
+  background: var(--c-teal-soft);
+  color: var(--c-teal);
   font-weight: 600;
   font-size: 13.5px;
   font-family: 'Poppins', sans-serif;
@@ -461,10 +488,10 @@ img {
 }
 
 .card-add:hover:not(:disabled) {
-  background: var(--accent-gradient);
-  border-color: transparent;
-  color: #fff;
-  box-shadow: 0 4px 14px rgba(164, 69, 178, 0.3);
+  background: var(--c-teal);
+  border-color: var(--c-teal);
+  color: var(--accent-contrast);
+  box-shadow: 0 4px 14px rgba(20, 184, 166, 0.35);
 }
 
 .card-add.is-disabled {

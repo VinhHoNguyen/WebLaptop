@@ -269,8 +269,16 @@ const getProducts = async (req, res) => {
         // Fallback to products.json
         try {
             let products = await loadProductsFromJson();
-            
+
             // Apply filters
+            if (req.query.ids) {
+                const requestedIds = new Set(parseIds(req.query.ids));
+                if (requestedIds.size === 0) {
+                    products = [];
+                } else {
+                    products = products.filter(p => requestedIds.has(String(p.id)));
+                }
+            }
             if (req.query.category && req.query.category.toLowerCase() !== 'all') {
                 products = products.filter(p => p.category.toLowerCase() === req.query.category.toLowerCase());
             }
@@ -512,6 +520,64 @@ const updateProduct = async (req, res) => {
     }
 };
 
+const decrementStock = async (req, res) => {
+    try {
+        const productId = String(req.params.id || '').trim();
+        const count = Number(req.body?.count);
+        if (!productId || !Number.isFinite(count) || count <= 0) {
+            return sendError(res, req, {
+                status: 400,
+                message: 'Valid productId and positive count are required',
+                errorCode: 'VALIDATION_ERROR',
+            });
+        }
+
+        const [result] = await pool.query(
+            `UPDATE products SET stock = stock - ? WHERE id = ? AND stock >= ?`,
+            [Math.floor(count), productId, Math.floor(count)]
+        );
+
+        if (result.affectedRows === 0) {
+            const [existing] = await pool.query(
+                `SELECT id, stock FROM products WHERE id = ? LIMIT 1`,
+                [productId]
+            );
+            if (existing.length === 0) {
+                return sendError(res, req, {
+                    status: 404,
+                    message: 'Product not found',
+                    errorCode: 'PRODUCT_NOT_FOUND',
+                });
+            }
+            return sendError(res, req, {
+                status: 409,
+                message: 'Insufficient stock',
+                errorCode: 'INSUFFICIENT_STOCK',
+                data: { available: Number(existing[0].stock || 0), requested: Math.floor(count) },
+            });
+        }
+
+        const [rows] = await pool.query(
+            `SELECT id, name, price, description, category, image, stock, specs, createdAt, updatedAt
+             FROM products
+             WHERE id = ?
+             LIMIT 1`,
+            [productId]
+        );
+
+        return sendSuccess(res, req, {
+            data: normalizeProduct(rows[0]),
+            message: 'Stock decremented',
+        });
+    } catch (error) {
+        return sendError(res, req, {
+            status: 500,
+            message: 'Failed to decrement stock',
+            errorCode: 'STOCK_UPDATE_FAILED',
+        });
+    }
+};
+
 const deleteProduct = async (req, res) => {
     try {
         const [result] = await pool.query(`DELETE FROM products WHERE id = ?`, [req.params.id]);
@@ -545,5 +611,6 @@ module.exports = {
     getProductById,
     findProduct,
     updateProduct,
+    decrementStock,
     deleteProduct
 };

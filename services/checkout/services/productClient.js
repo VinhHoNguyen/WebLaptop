@@ -6,8 +6,10 @@ const RETRY_COUNT = Number(process.env.PRODUCT_RETRY_COUNT || 2);
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const requestWithRetry = async (path) => {
+const requestWithRetry = async (path, options = {}) => {
   let lastError = null;
+  const method = options.method || 'GET';
+  const body = options.body !== undefined ? JSON.stringify(options.body) : undefined;
 
   for (let attempt = 0; attempt <= RETRY_COUNT; attempt += 1) {
     const controller = new AbortController();
@@ -15,10 +17,11 @@ const requestWithRetry = async (path) => {
 
     try {
       const response = await fetch(`${PRODUCT_SERVICE_URL}${path}`, {
-        method: 'GET',
+        method,
         headers: {
           'content-type': 'application/json',
         },
+        body,
         signal: controller.signal,
       });
       clearTimeout(timeout);
@@ -65,7 +68,20 @@ const getProductById = async (id) => {
   return requestWithRetry(`/products/id/${encodeURIComponent(productId)}`);
 };
 
+const decrementStock = async (id, count) => {
+  const productId = String(id || '').trim();
+  const qty = Math.floor(Number(count));
+  if (!productId || !Number.isFinite(qty) || qty <= 0) {
+    throw new Error('Invalid productId or count');
+  }
+  return requestWithRetry(`/products/${encodeURIComponent(productId)}/decrement-stock`, {
+    method: 'POST',
+    body: { count: qty },
+  });
+};
+
 module.exports = {
   getProductsByIds,
   getProductById,
+  decrementStock,
 };

@@ -126,53 +126,63 @@ const CartsLocal = {
   },
 
   addProduct: async (data: LocalCartItem) => {
-    const dataAdd = data;
     const token = localStorage.getItem("token");
-
-    if (token) {
-      try {
-        await CartAPI.Add_To_Cart({
-          id_product: dataAdd.id_product,
-          name_product: dataAdd.name_product,
-          price_product: dataAdd.price_product,
-          count: dataAdd.count,
-          image: dataAdd.image,
-          size: dataAdd.size,
-        });
-        const serverCart = await CartsLocal.fetchFromServer();
-        return serverCart;
-      } catch (error) {
-        const status = (error as { response?: { status?: number } })?.response?.status;
-        if (status === 401) {
-          localStorage.removeItem("token");
-        }
-        console.error("Error adding to cart:", error);
-      }
+    if (!token) {
+      const err = new Error("AUTH_REQUIRED") as Error & { code?: string };
+      err.code = "AUTH_REQUIRED";
+      throw err;
     }
 
-    const cartKey = getCartKey();
-    const current = readCartFromStorage();
-
-    if (current.length < 1) {
-      current.push({ ...dataAdd, id_cart: Date.now().toString() });
-      localStorage.setItem(cartKey, JSON.stringify(current));
-    } else {
-      let flag = false;
-
-      for (let i = 0; i < current.length; i += 1) {
-        if (current[i].id_product === dataAdd.id_product && current[i].size === dataAdd.size) {
-          current[i].count = Number(current[i].count) + Number(dataAdd.count);
-          flag = true;
-          break;
-        }
+    try {
+      await CartAPI.Add_To_Cart({
+        id_product: data.id_product,
+        name_product: data.name_product,
+        price_product: data.price_product,
+        count: data.count,
+        image: data.image,
+        size: data.size,
+      });
+      return await CartsLocal.fetchFromServer();
+    } catch (error) {
+      const status = (error as { response?: { status?: number } })?.response?.status;
+      if (status === 401) {
+        localStorage.removeItem("token");
+        const err = new Error("AUTH_REQUIRED") as Error & { code?: string };
+        err.code = "AUTH_REQUIRED";
+        throw err;
       }
-
-      if (!flag) {
-        current.push({ ...dataAdd, id_cart: Date.now().toString() });
-      }
-
-      localStorage.setItem(cartKey, JSON.stringify(current));
+      throw error;
     }
+  },
+
+  incrementProduct: async (productId: string) => {
+    if (!localStorage.getItem("token")) {
+      const err = new Error("AUTH_REQUIRED") as Error & { code?: string };
+      err.code = "AUTH_REQUIRED";
+      throw err;
+    }
+    await CartAPI.Add_To_Cart({ id_product: productId, count: 1 });
+    return CartsLocal.fetchFromServer();
+  },
+
+  decrementProduct: async (productId: string) => {
+    if (!localStorage.getItem("token")) {
+      const err = new Error("AUTH_REQUIRED") as Error & { code?: string };
+      err.code = "AUTH_REQUIRED";
+      throw err;
+    }
+    await CartAPI.Decrement_Cart_Item(productId);
+    return CartsLocal.fetchFromServer();
+  },
+
+  removeProduct: async (productId: string) => {
+    if (!localStorage.getItem("token")) {
+      const err = new Error("AUTH_REQUIRED") as Error & { code?: string };
+      err.code = "AUTH_REQUIRED";
+      throw err;
+    }
+    await CartAPI.Remove_From_Cart(productId);
+    return CartsLocal.fetchFromServer();
   },
 
   deleteProduct: async (id_cart: string) => {
@@ -197,20 +207,13 @@ const CartsLocal = {
   },
 
   updateProduct: async (data: LocalCartItem) => {
-    const cartKey = getCartKey();
-    const current = readCartFromStorage();
-    const index = current.findIndex((value) => value.id_cart === data.id_cart);
-
-    if (index > -1) {
-      current[index].count = data.count;
-      localStorage.setItem(cartKey, JSON.stringify(current));
+    if (!localStorage.getItem("token")) {
+      const err = new Error("AUTH_REQUIRED") as Error & { code?: string };
+      err.code = "AUTH_REQUIRED";
+      throw err;
     }
-
-    try {
-      await CartAPI.Update_Cart_Item();
-    } catch (error) {
-      console.error("Error updating cart:", error);
-    }
+    await CartAPI.Update_Cart_Item(data.id_product, data.count);
+    return CartsLocal.fetchFromServer();
   },
 
   clearCart: async () => {
