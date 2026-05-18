@@ -169,6 +169,23 @@ services:
       - mongodb_data:/data/db
     networks:
       - app-network
+  chat-service:
+    build:
+      context: ./services/chat
+      dockerfile: Dockerfile
+    container_name: webgame-chat
+    restart: unless-stopped
+    ports:
+      - "3005:3005"
+    environment:
+      PORT: 3005
+      MONGODB_URI: mongodb://mongodb:27017/chat_db
+      CORS_ORIGIN: http://localhost:5173,http://localhost:5174
+    depends_on:
+      - mongodb
+    networks:
+      - app-network
+
 networks:
   app-network:
     driver: bridge
