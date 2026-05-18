@@ -578,6 +578,139 @@ const decrementStock = async (req, res) => {
     }
 };
 
+const getInternalProductById = async (req, res) => {
+    try {
+        const [rows] = await pool.query(
+            `SELECT id, name, price, description, category, image, stock, specs, createdAt, updatedAt
+             FROM products
+             WHERE id = ?
+             LIMIT 1`,
+            [req.params.id]
+        );
+
+        if (rows.length === 0) {
+            return sendError(res, req, {
+                status: 404,
+                message: 'Product not found',
+                errorCode: 'PRODUCT_NOT_FOUND',
+            });
+        }
+
+        return sendSuccess(res, req, {
+            data: normalizeProduct(rows[0]),
+            message: 'Product fetched (internal)',
+        });
+    } catch (error) {
+        return sendError(res, req, {
+            status: 500,
+            message: 'Failed to fetch product by id',
+            errorCode: 'PRODUCT_FETCH_FAILED',
+        });
+    }
+};
+
+const getInternalProductsBatch = async (req, res) => {
+    try {
+        const ids = parseIds(req.query.ids || '');
+        if (ids.length === 0) {
+            return sendSuccess(res, req, { data: [], message: 'Empty batch' });
+        }
+
+        const [rows] = await pool.query(
+            `SELECT id, name, price, description, category, image, stock, specs, createdAt, updatedAt
+             FROM products
+             WHERE id IN (${ids.map(() => '?').join(', ')})`,
+            ids
+        );
+
+        return sendSuccess(res, req, {
+            data: rows.map(normalizeProduct),
+            message: 'Products fetched (internal batch)',
+        });
+    } catch (error) {
+        return sendError(res, req, {
+            status: 500,
+            message: 'Failed to fetch products batch',
+            errorCode: 'PRODUCT_FETCH_FAILED',
+        });
+    }
+};
+
+const patchInternalStock = async (req, res) => {
+    try {
+        const productId = String(req.params.id || '').trim();
+        const delta = Number(req.body?.delta);
+        if (!productId || !Number.isFinite(delta) || delta === 0) {
+            return sendError(res, req, {
+                status: 400,
+                message: 'Valid productId and non-zero integer delta are required',
+                errorCode: 'VALIDATION_ERROR',
+            });
+        }
+
+        const intDelta = Math.trunc(delta);
+
+        if (intDelta < 0) {
+            const decrement = Math.abs(intDelta);
+            const [result] = await pool.query(
+                `UPDATE products SET stock = stock - ? WHERE id = ? AND stock >= ?`,
+                [decrement, productId, decrement]
+            );
+
+            if (result.affectedRows === 0) {
+                const [existing] = await pool.query(
+                    `SELECT id, stock FROM products WHERE id = ? LIMIT 1`,
+                    [productId]
+                );
+                if (existing.length === 0) {
+                    return sendError(res, req, {
+                        status: 404,
+                        message: 'Product not found',
+                        errorCode: 'PRODUCT_NOT_FOUND',
+                    });
+                }
+                return sendError(res, req, {
+                    status: 409,
+                    message: 'Insufficient stock',
+                    errorCode: 'INSUFFICIENT_STOCK',
+                    data: { available: Number(existing[0].stock || 0), requested: decrement },
+                });
+            }
+        } else {
+            const [result] = await pool.query(
+                `UPDATE products SET stock = stock + ? WHERE id = ?`,
+                [intDelta, productId]
+            );
+            if (result.affectedRows === 0) {
+                return sendError(res, req, {
+                    status: 404,
+                    message: 'Product not found',
+                    errorCode: 'PRODUCT_NOT_FOUND',
+                });
+            }
+        }
+
+        const [rows] = await pool.query(
+            `SELECT id, name, price, description, category, image, stock, specs, createdAt, updatedAt
+             FROM products
+             WHERE id = ?
+             LIMIT 1`,
+            [productId]
+        );
+
+        return sendSuccess(res, req, {
+            data: normalizeProduct(rows[0]),
+            message: intDelta < 0 ? 'Stock decremented' : 'Stock incremented',
+        });
+    } catch (error) {
+        return sendError(res, req, {
+            status: 500,
+            message: 'Failed to update stock',
+            errorCode: 'STOCK_UPDATE_FAILED',
+        });
+    }
+};
+
 const deleteProduct = async (req, res) => {
     try {
         const [result] = await pool.query(`DELETE FROM products WHERE id = ?`, [req.params.id]);
@@ -612,5 +745,8 @@ module.exports = {
     findProduct,
     updateProduct,
     decrementStock,
-    deleteProduct
+    deleteProduct,
+    getInternalProductById,
+    getInternalProductsBatch,
+    patchInternalStock,
 };

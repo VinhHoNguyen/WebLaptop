@@ -146,6 +146,31 @@ const deleteCartProduct = async (req, res) => {
     }
 }
 
+const clearCartByUserId = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        if (!userId) {
+            return sendError(res, req, {
+                status: 400,
+                message: 'userId is required',
+                errorCode: 'VALIDATION_ERROR',
+            });
+        }
+
+        const deletedCount = await clearCart(userId);
+        return sendSuccess(res, req, {
+            data: { userId, deletedCount },
+            message: 'Cart cleared (internal)',
+        });
+    } catch (error) {
+        return sendError(res, req, {
+            status: 500,
+            message: 'Failed to clear cart',
+            errorCode: 'CART_CLEAR_FAILED',
+        });
+    }
+}
+
 const checkout = async (req, res) => {
     try {
         const deletedCount = await clearCart(req.user.id);
@@ -168,5 +193,6 @@ module.exports = {
     addCartProduct,
     updateCartProduct,
     deleteCartProduct,
+    clearCartByUserId,
     checkout
 }

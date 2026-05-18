@@ -1,0 +1,18 @@
+{
+  "name": "webgame-notification-worker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Async consumer of order.created event — sends notifications (logs/emails). Has dead-letter queue for failed messages.",
+  "main": "worker.js",
+  "scripts": {
+    "start": "node worker.js",
+    "dev": "nodemon worker.js"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.4",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}

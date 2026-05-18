@@ -7,15 +7,42 @@ const {
 } = require('../repositories/orderRepository')
 const { sendSuccess, sendError } = require('../utils/response')
 const logger = require('../utils/logger')
+const { publish } = require('../messaging/publisher')
+const { getUserById } = require('../services/userClient')
 
 module.exports.post_order = async (req, res) => {
     try {
-        const order = await createOrder(req.body)
+        const payload = { ...req.body }
+
+        const targetUserId = payload.id_user || req.user?.id
+        if (targetUserId && (!payload.address || !payload.email)) {
+            try {
+                const userInfo = await getUserById(targetUserId)
+                if (userInfo) {
+                    payload.id_user = payload.id_user || userInfo.id
+                    if (!payload.address) {
+                        const addressParts = [userInfo.address, userInfo.phone].filter(Boolean)
+                        payload.address = addressParts.join(' - ') || payload.address
+                    }
+                    if (!payload.email) {
+                        payload.email = userInfo.email
+                    }
+                }
+            } catch (lookupError) {
+                logger.write('warn', 'order_user_lookup_failed', {
+                    requestId: req.requestId,
+                    userId: targetUserId,
+                    message: lookupError.message,
+                })
+            }
+        }
+
+        const order = await createOrder(payload)
 
         const io = req.app.get('io')
         if (io) {
             io.emit('order:new', {
-                orderId: order._id,
+                orderId: order.id,
                 total: order.total,
                 status: order.status,
             })
@@ -23,8 +50,19 @@ module.exports.post_order = async (req, res) => {
 
         logger.businessLog('order_created', {
             requestId: req.requestId,
-            orderId: String(order._id),
+            orderId: String(order.id),
+            userId: order.id_user,
+            total: order.total,
         })
+
+        publish('order.created', {
+            orderId: order.id,
+            userId: order.id_user,
+            total: order.total,
+            address: order.address,
+            email: req.user?.email || null,
+            createdAt: order.createdAt || new Date().toISOString(),
+        }, { requestId: req.requestId })
 
         return sendSuccess(res, req, {
             status: 201,
@@ -32,6 +70,10 @@ module.exports.post_order = async (req, res) => {
             message: 'Order created',
         })
     } catch (error) {
+        logger.write('error', 'order_create_failed', {
+            requestId: req.requestId,
+            message: error.message,
+        })
         return sendError(res, req, {
             status: 500,
             message: 'Failed to create order',

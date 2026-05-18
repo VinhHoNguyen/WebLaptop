@@ -3,6 +3,7 @@ const fetch = require('node-fetch');
 const PRODUCT_SERVICE_URL = (process.env.PRODUCT_SERVICE_URL || 'http://localhost:3002').replace(/\/+$/, '');
 const REQUEST_TIMEOUT_MS = Number(process.env.REQUEST_TIMEOUT_MS || 5000);
 const RETRY_COUNT = Number(process.env.PRODUCT_RETRY_COUNT || 2);
+const INTERNAL_SECRET = process.env.INTERNAL_SECRET || 'internal-shared-secret';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -20,6 +21,8 @@ const requestWithRetry = async (path, options = {}) => {
         method,
         headers: {
           'content-type': 'application/json',
+          'x-internal-call': 'true',
+          'x-internal-secret': INTERNAL_SECRET,
         },
         body,
         signal: controller.signal,
@@ -57,7 +60,7 @@ const getProductsByIds = async (ids = []) => {
     return [];
   }
   const query = encodeURIComponent(uniqueIds.join(','));
-  return requestWithRetry(`/products?ids=${query}`);
+  return requestWithRetry(`/products/internal/batch?ids=${query}`);
 };
 
 const getProductById = async (id) => {
@@ -65,23 +68,41 @@ const getProductById = async (id) => {
   if (!productId) {
     throw new Error('Missing product id');
   }
-  return requestWithRetry(`/products/id/${encodeURIComponent(productId)}`);
+  return requestWithRetry(`/products/internal/${encodeURIComponent(productId)}`);
+};
+
+const adjustStock = async (id, delta) => {
+  const productId = String(id || '').trim();
+  const intDelta = Math.trunc(Number(delta));
+  if (!productId || !Number.isFinite(intDelta) || intDelta === 0) {
+    throw new Error('Invalid productId or delta');
+  }
+  return requestWithRetry(`/products/internal/${encodeURIComponent(productId)}/stock`, {
+    method: 'PATCH',
+    body: { delta: intDelta },
+  });
 };
 
 const decrementStock = async (id, count) => {
-  const productId = String(id || '').trim();
   const qty = Math.floor(Number(count));
-  if (!productId || !Number.isFinite(qty) || qty <= 0) {
-    throw new Error('Invalid productId or count');
+  if (!Number.isFinite(qty) || qty <= 0) {
+    throw new Error('Invalid count');
   }
-  return requestWithRetry(`/products/${encodeURIComponent(productId)}/decrement-stock`, {
-    method: 'POST',
-    body: { count: qty },
-  });
+  return adjustStock(id, -qty);
+};
+
+const restoreStock = async (id, count) => {
+  const qty = Math.floor(Number(count));
+  if (!Number.isFinite(qty) || qty <= 0) {
+    throw new Error('Invalid count');
+  }
+  return adjustStock(id, qty);
 };
 
 module.exports = {
   getProductsByIds,
   getProductById,
+  adjustStock,
   decrementStock,
+  restoreStock,
 };

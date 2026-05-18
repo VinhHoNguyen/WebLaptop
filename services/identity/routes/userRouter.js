@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const validateToken = require("../middleware/tokenValidationMiddleware");
+const internalAuth = require("../middleware/internalAuthMiddleware");
 
 const {
         getUser,
@@ -10,7 +11,12 @@ const {
         deleteUserById,
         userRegister,
         loginUser,
+        getInternalUserById,
+        getInternalUserRole,
 } = require("../controllers/usercontroller");
+
+router.route("/internal/:id/role").get(internalAuth, getInternalUserRole);
+router.route("/internal/:id").get(internalAuth, getInternalUserById);
 
 router.route("/all").get(validateToken, getUsers);
 

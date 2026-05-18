@@ -2,6 +2,7 @@ const bcrypt = require("bcrypt");
 const crypto = require('crypto');
 const jwt = require("jsonwebtoken");
 const pool = require("../config/db_conn");
+const { clearUserCart } = require('../services/orderClient');
 require("dotenv").config();
 
 const updateFields = ["firstName", "lastName", "email", "age", "phone", "gender", "role", "status"];
@@ -133,9 +134,76 @@ const deleteUserById = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
+    try {
+      await clearUserCart(req.params.id);
+    } catch (cleanupError) {
+      console.warn('Failed to clear cart for deleted user', req.params.id, cleanupError.message);
+    }
+
     return res.status(200).json({ message: "User deleted", id: req.params.id });
   } catch (error) {
     return res.status(500).json({ message: "Failed to delete user", error: error.message });
+  }
+};
+
+const getInternalUserById = async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT id, email, firstName, lastName, age, phone, gender, role, status, createdAt, updatedAt
+       FROM users
+       WHERE id = ?
+       LIMIT 1`,
+      [req.params.id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+        errorCode: "USER_NOT_FOUND",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: normalizeUser(rows[0]),
+      message: "User fetched (internal)",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch user",
+      errorCode: "USER_FETCH_FAILED",
+    });
+  }
+};
+
+const getInternalUserRole = async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT id, role FROM users WHERE id = ? LIMIT 1`,
+      [req.params.id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+        errorCode: "USER_NOT_FOUND",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: { id: rows[0].id, role: rows[0].role || "User" },
+      message: "User role fetched (internal)",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch user role",
+      errorCode: "USER_ROLE_FETCH_FAILED",
+    });
   }
 };
 
@@ -230,4 +298,6 @@ module.exports = {
   deleteUserById,
   userRegister,
   loginUser,
+  getInternalUserById,
+  getInternalUserRole,
 };
