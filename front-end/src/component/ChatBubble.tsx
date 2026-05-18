@@ -36,11 +36,9 @@ interface ChatResponse {
   data?: unknown;
 }
 
-// ── Constants ──────────────────────────────────────────────────
 const CHAT_SESSION_STORAGE_KEY = "webgame-chat-session-id";
 const CHAT_API_URL = import.meta.env.VITE_CHAT_API_URL || "http://localhost:3005";
 
-// ── Helpers ────────────────────────────────────────────────────
 const getChatSessionId = () => {
   const existing = window.localStorage.getItem(CHAT_SESSION_STORAGE_KEY);
   if (existing) return existing;
@@ -85,7 +83,32 @@ const formatProductSpecs = (product: Product) => {
   ].filter(Boolean) as string[];
 };
 
-// ── MongoDB chat history helpers ───────────────────────────────
+// Render dòng text có thể chứa link
+const renderLine = (line: string, index: number) => {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = line.split(urlRegex);
+  return (
+    <p key={index}>
+      {parts.map((part, j) =>
+        urlRegex.test(part) ? (
+          <a
+            key={j}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "#667eea", textDecoration: "underline", fontWeight: 500 }}
+          >
+            🔗 Xem sản phẩm
+          </a>
+        ) : (
+          <span key={j}>{part}</span>
+        )
+      )}
+    </p>
+  );
+};
+
+// MongoDB helpers
 const loadHistoryFromDB = async (userId: string): Promise<ChatMessage[] | null> => {
   try {
     const res = await fetch(`${CHAT_API_URL}/api/chat/${userId}`);
@@ -99,10 +122,7 @@ const loadHistoryFromDB = async (userId: string): Promise<ChatMessage[] | null> 
   return null;
 };
 
-const saveMessagesToDB = async (
-  userId: string,
-  messages: { role: string; content: string }[]
-) => {
+const saveMessagesToDB = async (userId: string, messages: { role: string; content: string }[]) => {
   try {
     await fetch(`${CHAT_API_URL}/api/chat/${userId}`, {
       method: "POST",
@@ -118,9 +138,7 @@ const deleteHistoryFromDB = async (userId: string) => {
   } catch {}
 };
 
-// ── Component ──────────────────────────────────────────────────
 export default function ChatBubble() {
-  // Auth
   const user = getUserFromToken();
   const userName = user
     ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || null
@@ -135,7 +153,6 @@ export default function ChatBubble() {
     return "Xin chào! 👋 Tôi là AI tư vấn laptop. Bạn có thể hỏi:\n- 'Laptop gaming dưới 20 triệu?'\n- 'So sánh Titan Pro và Vortex RTX'\n- 'Xem giỏ hàng của tôi'\n\nHãy cho tôi biết nhu cầu của bạn!";
   };
 
-  // State
   const [sessionId] = useState(() => getChatSessionId());
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -147,22 +164,17 @@ export default function ChatBubble() {
   const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  // Auto scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Load lịch sử từ MongoDB khi mở chat
   useEffect(() => {
     if (!userId || !isOpen) return;
     loadHistoryFromDB(userId).then((history) => {
-      if (history && history.length > 0) {
-        setMessages(history);
-      }
+      if (history && history.length > 0) setMessages(history);
     });
   }, [isOpen, userId]);
 
-  // Xóa lịch sử
   const clearHistory = async () => {
     if (userId) {
       await deleteHistoryFromDB(userId);
@@ -172,7 +184,6 @@ export default function ChatBubble() {
     setRecommendedProducts([]);
   };
 
-  // Gửi tin nhắn
   const sendMessage = async (text?: string) => {
     const messageText = (text || input).trim();
     if (!messageText || isLoading) return;
@@ -193,10 +204,7 @@ export default function ChatBubble() {
       const webhookUrl = API_BASE_URLS.n8nChat;
       if (!webhookUrl) {
         setError("Webhook chưa được cấu hình");
-        setMessages((prev) => [
-          ...prev,
-          createMessage("assistant", "❌ Lỗi: Webhook chưa được cấu hình."),
-        ]);
+        setMessages((prev) => [...prev, createMessage("assistant", "❌ Lỗi: Webhook chưa được cấu hình.")]);
         setIsLoading(false);
         return;
       }
@@ -216,7 +224,6 @@ export default function ChatBubble() {
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-      // Parse response — hỗ trợ cả JSON và plain text
       const responseText = await response.text();
       let data: ChatResponse;
       try {
@@ -231,27 +238,21 @@ export default function ChatBubble() {
       setMessages((prev) => [...prev, createMessage("assistant", assistantText)]);
       setRecommendedProducts(products.slice(0, 3));
 
-      // Lưu vào MongoDB nếu đã đăng nhập
       if (userId) {
         saveMessagesToDB(userId, [
           { role: "user", content: messageText },
           { role: "assistant", content: assistantText },
         ]);
       }
-
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "Lỗi không xác định";
       setError(errorMsg);
-      setMessages((prev) => [
-        ...prev,
-        createMessage("assistant", "Lỗi kết nối"),
-      ]);
+      setMessages((prev) => [...prev, createMessage("assistant", "Lỗi kết nối")]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Render
   return (
     <>
       {isOpen && (
@@ -304,14 +305,11 @@ export default function ChatBubble() {
                 <div key={msg.id} className={`chat-assistant-message message-${msg.role}`}>
                   {msg.role === "assistant" && <span className="message-avatar">🤖</span>}
                   <div className="message-content">
-                    {msg.content.split("\n").map((line, i) => (
-                      <p key={i}>{line}</p>
-                    ))}
+                    {msg.content.split("\n").map((line, i) => renderLine(line, i))}
                   </div>
                 </div>
               ))}
 
-              {/* Product cards */}
               {recommendedProducts.length > 0 && (
                 <div className="chat-product-list">
                   {recommendedProducts.map((p, i) => (
@@ -352,7 +350,6 @@ export default function ChatBubble() {
               </button>
             </form>
 
-            {/* Error */}
             {error && (
               <p className="chat-assistant-error">
                 ⚠️ <span>{error}</span>
@@ -362,7 +359,6 @@ export default function ChatBubble() {
         </div>
       )}
 
-      {/* Bubble button */}
       <button
         type="button"
         aria-label="💬 Chat hỗ trợ"
