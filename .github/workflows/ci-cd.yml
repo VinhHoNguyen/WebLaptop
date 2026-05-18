@@ -59,7 +59,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: front-end
-        run: npm ci
+        run: npm install --legacy-peer-deps
 
       - name: Build front-end
         working-directory: front-end
@@ -88,13 +88,13 @@ jobs:
       - name: Run frontend tests
         working-directory: front-end
         run: |
-          npm ci
+          npm install --legacy-peer-deps
           npm run test --if-present -- --run
 
       - name: Run identity service tests
         working-directory: services/identity
         run: |
-          npm ci
+          npm install --legacy-peer-deps
           npx jest --ci --runInBand
 
   validate-admin-portal:
@@ -113,7 +113,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: admin-portal
-        run: npm ci
+        run: npm install --legacy-peer-deps
 
       - name: Build admin portal
         working-directory: admin-portal
