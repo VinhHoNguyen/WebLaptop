@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { API_BASE_URLS } from "../config/api";
 import { formatVnd } from "../utils/currency";
+import { getUserFromToken } from "../utils/auth";
 import "../Style/ChatAssistant.css";
 
 type ChatRole = "user" | "assistant";
@@ -30,6 +31,8 @@ interface ChatResponse {
   text?: string;
   message?: string;
   products?: Product[];
+  productIds?: string[];
+  hasProducts?: boolean;
   data?: unknown;
 }
 
@@ -37,15 +40,11 @@ const CHAT_SESSION_STORAGE_KEY = "webgame-chat-session-id";
 
 const getChatSessionId = () => {
   const existingSessionId = window.localStorage.getItem(CHAT_SESSION_STORAGE_KEY);
-  if (existingSessionId) {
-    return existingSessionId;
-  }
-
+  if (existingSessionId) return existingSessionId;
   const generatedSessionId =
     typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
       ? crypto.randomUUID()
       : `chat-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-
   window.localStorage.setItem(CHAT_SESSION_STORAGE_KEY, generatedSessionId);
   return generatedSessionId;
 };
@@ -57,13 +56,9 @@ const createMessage = (role: ChatRole, content: string): ChatMessage => ({
 });
 
 const parseProductsFromResponse = (data: ChatResponse): Product[] => {
-  if (Array.isArray(data.products)) {
-    return data.products;
-  }
+  if (Array.isArray(data.products)) return data.products;
   const candidateText = [data.answer, data.text, data.message].filter(Boolean).join("\n");
-  if (!candidateText) {
-    return [];
-  }
+  if (!candidateText) return [];
   try {
     const parsed = JSON.parse(candidateText);
     if (Array.isArray(parsed)) {
@@ -80,9 +75,7 @@ const parseProductsFromResponse = (data: ChatResponse): Product[] => {
 
 const formatProductSpecs = (product: Product) => {
   const specs = product.specs;
-  if (!specs) {
-    return [];
-  }
+  if (!specs) return [];
   return [
     specs.brand ? `Hãng: ${specs.brand}` : null,
     specs.cpu ? `CPU: ${specs.cpu}` : null,
@@ -92,38 +85,80 @@ const formatProductSpecs = (product: Product) => {
 };
 
 export default function ChatBubble() {
+  // ── Auth ───────────────────────────────────────────────────
+  const user = getUserFromToken();
+  const userName = user
+    ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || null
+    : null;
+  const userId = user?.id ?? null;
+  const token = localStorage.getItem("token") ?? "";
+  const HISTORY_KEY = userId ? `chat-history-${userId}` : null;
+
+  // ── Welcome message ────────────────────────────────────────
+  const getWelcomeMessage = () => {
+    if (userName) {
+      return `Xin chào ${userName}! 👋 Tôi là AI tư vấn laptop của LaptopStore.\nTôi có thể giúp gì cho bạn hôm nay?`;
+    }
+    return "Xin chào! 👋 Tôi là AI tư vấn laptop. Bạn có thể hỏi:\n- 'Laptop gaming dưới 20 triệu?'\n- 'So sánh Titan Pro và Vortex RTX'\n- 'Xem giỏ hàng của tôi'\n\nHãy cho tôi biết nhu cầu của bạn!";
+  };
+
+  // ── State ──────────────────────────────────────────────────
   const [sessionId] = useState(() => getChatSessionId());
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    createMessage(
-      "assistant",
-      "Xin chào! 👋 Tôi là AI tư vấn laptop. Bạn có thể hỏi:\n- 'Tôi có 1 triệu, mua được laptop gì?'\n- 'Laptop gaming dưới 2 triệu?'\n- 'So sánh Titan Pro và Vortex RTX'\n\nHãy cho tôi biết nhu cầu của bạn!"
-    ),
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    if (userId) {
+      const saved = localStorage.getItem(`chat-history-${userId}`);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved) as ChatMessage[];
+          if (parsed.length > 0) return parsed;
+        } catch {}
+      }
+    }
+    return [createMessage("assistant", getWelcomeMessage())];
+  });
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
+  // ── Auto scroll ────────────────────────────────────────────
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // ── Lưu lịch sử ───────────────────────────────────────────
+  useEffect(() => {
+    if (!HISTORY_KEY) return;
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(messages));
+  }, [messages, HISTORY_KEY]);
+
+  // ── Xóa lịch sử ───────────────────────────────────────────
+  const clearHistory = () => {
+    if (HISTORY_KEY) localStorage.removeItem(HISTORY_KEY);
+    setMessages([createMessage("assistant", getWelcomeMessage())]);
+    setRecommendedProducts([]);
+  };
+
+  // ── Gửi tin nhắn ──────────────────────────────────────────
   const sendMessage = async (text?: string) => {
     const messageText = (text || input).trim();
     if (!messageText || isLoading) return;
+
     const userMessage = createMessage("user", messageText);
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
     setError(null);
     setRecommendedProducts([]);
+
     try {
       const chatHistory = [...messages, userMessage].map((msg) => ({
         role: msg.role,
         content: msg.content,
       }));
+
       const webhookUrl = API_BASE_URLS.n8nChat;
       if (!webhookUrl) {
         setError("Webhook chưa được cấu hình");
@@ -134,6 +169,7 @@ export default function ChatBubble() {
         setIsLoading(false);
         return;
       }
+
       const response = await fetch(webhookUrl, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
@@ -141,56 +177,129 @@ export default function ChatBubble() {
           sessionId,
           message: messageText,
           history: JSON.stringify(chatHistory),
+          token,
+          userName: userName ?? "",
+          userId: userId ?? "",
         }).toString(),
       });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const text = await response.text();
+      let data: ChatResponse;
+      try {
+        data = JSON.parse(text) as ChatResponse;
+      } catch {
+        data = { answer: text };
       }
-      const data = (await response.json()) as ChatResponse;
       const assistantText = data.answer || data.text || data.message || JSON.stringify(data);
-      const products = parseProductsFromResponse(data);
+
+      // Lấy products: ưu tiên productIds từ n8n, fallback parse response
+      let products: Product[] = [];
+      if (data.productIds && data.productIds.length > 0) {
+        try {
+          const productRes = await fetch(
+            `${API_BASE_URLS.product}/products?ids=${data.productIds.join(",")}`
+          );
+          const productData = await productRes.json();
+          products = productData.data || [];
+        } catch {
+          products = parseProductsFromResponse(data);
+        }
+      } else {
+        products = parseProductsFromResponse(data);
+      }
+
       setMessages((prev) => [...prev, createMessage("assistant", assistantText)]);
       setRecommendedProducts(products.slice(0, 3));
+
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "Lỗi không xác định";
       setError(errorMsg);
       setMessages((prev) => [
         ...prev,
-        createMessage("assistant", `❌ Lỗi kết nối: ${errorMsg}`),
+        createMessage("assistant", "Lỗi kết nối"),
       ]);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // ── Render ─────────────────────────────────────────────────
   return (
     <>
       {isOpen && (
         <div className="chat-assistant-shell" style={{ display: "flex" }}>
           <div className="chat-assistant-panel" role="dialog" aria-label="Chat tư vấn laptop">
+
+            {/* Header */}
             <div className="chat-assistant-header">
               <div>
                 <p className="chat-assistant-kicker">AI Agent</p>
                 <h3>Tư Vấn Laptop</h3>
+                {userName && (
+                  <p style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", margin: 0 }}>
+                    👤 {userName}
+                  </p>
+                )}
               </div>
-              <button
-                type="button"
-                className="chat-assistant-close"
-                onClick={() => setIsOpen(false)}
-                aria-label="Đóng chat"
-              >
-                ✕
-              </button>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+                {userId && (
+                  <button
+                    type="button"
+                    onClick={clearHistory}
+                    style={{
+                      background: "none",
+                      border: "1px solid rgba(255,255,255,0.4)",
+                      color: "rgba(255,255,255,0.8)",
+                      cursor: "pointer",
+                      fontSize: 11,
+                      borderRadius: 4,
+                      padding: "2px 8px",
+                    }}
+                  >
+                    Xóa lịch sử
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="chat-assistant-close"
+                  onClick={() => setIsOpen(false)}
+                  aria-label="Đóng chat"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
+
+            {/* Messages */}
             <div className="chat-assistant-messages">
               {messages.map((msg) => (
                 <div key={msg.id} className={`chat-assistant-message message-${msg.role}`}>
                   {msg.role === "assistant" && <span className="message-avatar">🤖</span>}
                   <div className="message-content">
-                    {msg.content.split("\n").map((line, i) => (<p key={i}>{line}</p>))}
+                    {msg.content.split("\n").map((line, i) => (
+                      <p key={i}>{line}</p>
+                    ))}
                   </div>
                 </div>
               ))}
+
+              {/* Product cards */}
+              {recommendedProducts.length > 0 && (
+                <div className="chat-product-list">
+                  {recommendedProducts.map((p, i) => (
+                    <div key={i} className="chat-product-card">
+                      <div className="chat-product-name">{p.name}</div>
+                      <div className="chat-product-price">{formatVnd(p.price)}</div>
+                      <div className="chat-product-specs">
+                        {formatProductSpecs(p).join(" · ")}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {isLoading && (
                 <div className="chat-assistant-message message-assistant">
                   <span className="message-avatar">🤖</span>
@@ -199,10 +308,12 @@ export default function ChatBubble() {
               )}
               <div ref={messagesEndRef} />
             </div>
-            <form className="chat-assistant-form" onSubmit={(e) => {
-              e.preventDefault();
-              sendMessage();
-            }}>
+
+            {/* Input */}
+            <form
+              className="chat-assistant-form"
+              onSubmit={(e) => { e.preventDefault(); sendMessage(); }}
+            >
               <input
                 type="text"
                 value={input}
@@ -214,12 +325,21 @@ export default function ChatBubble() {
                 {isLoading ? "..." : "Gửi"}
               </button>
             </form>
-            {error && <p className="chat-assistant-error">⚠️ {error}</p>}
+
+            {/* Error */}
+            {error && (
+              <p className="chat-assistant-error">
+                ⚠️ <span>{error}</span>
+              </p>
+            )}
           </div>
         </div>
       )}
+
+      {/* Bubble button */}
       <button
         type="button"
+        aria-label="💬 Chat hỗ trợ"
         onClick={() => setIsOpen(!isOpen)}
         style={{
           position: "fixed",
@@ -241,7 +361,7 @@ export default function ChatBubble() {
           justifyContent: "center",
         }}
       >
-        💬
+        {isOpen ? "✕" : "💬"}
       </button>
     </>
   );
