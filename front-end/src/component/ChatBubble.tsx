@@ -36,17 +36,20 @@ interface ChatResponse {
   data?: unknown;
 }
 
+// ── Constants ──────────────────────────────────────────────────
 const CHAT_SESSION_STORAGE_KEY = "webgame-chat-session-id";
+const CHAT_API_URL = import.meta.env.VITE_CHAT_API_URL || "http://localhost:3005";
 
+// ── Helpers ────────────────────────────────────────────────────
 const getChatSessionId = () => {
-  const existingSessionId = window.localStorage.getItem(CHAT_SESSION_STORAGE_KEY);
-  if (existingSessionId) return existingSessionId;
-  const generatedSessionId =
+  const existing = window.localStorage.getItem(CHAT_SESSION_STORAGE_KEY);
+  if (existing) return existing;
+  const generated =
     typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
       ? crypto.randomUUID()
       : `chat-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  window.localStorage.setItem(CHAT_SESSION_STORAGE_KEY, generatedSessionId);
-  return generatedSessionId;
+  window.localStorage.setItem(CHAT_SESSION_STORAGE_KEY, generated);
+  return generated;
 };
 
 const createMessage = (role: ChatRole, content: string): ChatMessage => ({
@@ -67,9 +70,7 @@ const parseProductsFromResponse = (data: ChatResponse): Product[] => {
     if (parsed && typeof parsed === "object" && Array.isArray((parsed as ChatResponse).products)) {
       return (parsed as ChatResponse).products || [];
     }
-  } catch (_error) {
-    return [];
-  }
+  } catch (_error) {}
   return [];
 };
 
@@ -84,17 +85,49 @@ const formatProductSpecs = (product: Product) => {
   ].filter(Boolean) as string[];
 };
 
+// ── MongoDB chat history helpers ───────────────────────────────
+const loadHistoryFromDB = async (userId: string): Promise<ChatMessage[] | null> => {
+  try {
+    const res = await fetch(`${CHAT_API_URL}/api/chat/${userId}`);
+    const data = await res.json();
+    if (data.success && data.data.length > 0) {
+      return data.data.map((m: { role: string; content: string }) =>
+        createMessage(m.role as ChatRole, m.content)
+      );
+    }
+  } catch {}
+  return null;
+};
+
+const saveMessagesToDB = async (
+  userId: string,
+  messages: { role: string; content: string }[]
+) => {
+  try {
+    await fetch(`${CHAT_API_URL}/api/chat/${userId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages }),
+    });
+  } catch {}
+};
+
+const deleteHistoryFromDB = async (userId: string) => {
+  try {
+    await fetch(`${CHAT_API_URL}/api/chat/${userId}`, { method: "DELETE" });
+  } catch {}
+};
+
+// ── Component ──────────────────────────────────────────────────
 export default function ChatBubble() {
-  // ── Auth ───────────────────────────────────────────────────
+  // Auth
   const user = getUserFromToken();
   const userName = user
     ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || null
     : null;
   const userId = user?.id ?? null;
   const token = localStorage.getItem("token") ?? "";
-  const HISTORY_KEY = userId ? `chat-history-${userId}` : null;
 
-  // ── Welcome message ────────────────────────────────────────
   const getWelcomeMessage = () => {
     if (userName) {
       return `Xin chào ${userName}! 👋 Tôi là AI tư vấn laptop của LaptopStore.\nTôi có thể giúp gì cho bạn hôm nay?`;
@@ -102,46 +135,44 @@ export default function ChatBubble() {
     return "Xin chào! 👋 Tôi là AI tư vấn laptop. Bạn có thể hỏi:\n- 'Laptop gaming dưới 20 triệu?'\n- 'So sánh Titan Pro và Vortex RTX'\n- 'Xem giỏ hàng của tôi'\n\nHãy cho tôi biết nhu cầu của bạn!";
   };
 
-  // ── State ──────────────────────────────────────────────────
+  // State
   const [sessionId] = useState(() => getChatSessionId());
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>(() => {
-    if (userId) {
-      const saved = localStorage.getItem(`chat-history-${userId}`);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved) as ChatMessage[];
-          if (parsed.length > 0) return parsed;
-        } catch {}
-      }
-    }
-    return [createMessage("assistant", getWelcomeMessage())];
-  });
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    createMessage("assistant", getWelcomeMessage()),
+  ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  // ── Auto scroll ────────────────────────────────────────────
+  // Auto scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // ── Lưu lịch sử ───────────────────────────────────────────
+  // Load lịch sử từ MongoDB khi mở chat
   useEffect(() => {
-    if (!HISTORY_KEY) return;
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(messages));
-  }, [messages, HISTORY_KEY]);
+    if (!userId || !isOpen) return;
+    loadHistoryFromDB(userId).then((history) => {
+      if (history && history.length > 0) {
+        setMessages(history);
+      }
+    });
+  }, [isOpen, userId]);
 
-  // ── Xóa lịch sử ───────────────────────────────────────────
-  const clearHistory = () => {
-    if (HISTORY_KEY) localStorage.removeItem(HISTORY_KEY);
+  // Xóa lịch sử
+  const clearHistory = async () => {
+    if (userId) {
+      await deleteHistoryFromDB(userId);
+      localStorage.removeItem(`chat-history-${userId}`);
+    }
     setMessages([createMessage("assistant", getWelcomeMessage())]);
     setRecommendedProducts([]);
   };
 
-  // ── Gửi tin nhắn ──────────────────────────────────────────
+  // Gửi tin nhắn
   const sendMessage = async (text?: string) => {
     const messageText = (text || input).trim();
     if (!messageText || isLoading) return;
@@ -185,33 +216,28 @@ export default function ChatBubble() {
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-      const text = await response.text();
+      // Parse response — hỗ trợ cả JSON và plain text
+      const responseText = await response.text();
       let data: ChatResponse;
       try {
-        data = JSON.parse(text) as ChatResponse;
+        data = JSON.parse(responseText) as ChatResponse;
       } catch {
-        data = { answer: text };
+        data = { answer: responseText };
       }
-      const assistantText = data.answer || data.text || data.message || JSON.stringify(data);
 
-      // Lấy products: ưu tiên productIds từ n8n, fallback parse response
-      let products: Product[] = [];
-      if (data.productIds && data.productIds.length > 0) {
-        try {
-          const productRes = await fetch(
-            `${API_BASE_URLS.product}/products?ids=${data.productIds.join(",")}`
-          );
-          const productData = await productRes.json();
-          products = productData.data || [];
-        } catch {
-          products = parseProductsFromResponse(data);
-        }
-      } else {
-        products = parseProductsFromResponse(data);
-      }
+      const assistantText = data.answer || data.text || data.message || responseText;
+      const products = parseProductsFromResponse(data);
 
       setMessages((prev) => [...prev, createMessage("assistant", assistantText)]);
       setRecommendedProducts(products.slice(0, 3));
+
+      // Lưu vào MongoDB nếu đã đăng nhập
+      if (userId) {
+        saveMessagesToDB(userId, [
+          { role: "user", content: messageText },
+          { role: "assistant", content: assistantText },
+        ]);
+      }
 
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "Lỗi không xác định";
@@ -225,7 +251,7 @@ export default function ChatBubble() {
     }
   };
 
-  // ── Render ─────────────────────────────────────────────────
+  // Render
   return (
     <>
       {isOpen && (
