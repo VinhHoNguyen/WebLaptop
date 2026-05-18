@@ -42,6 +42,16 @@ const CHAT_API_URL = import.meta.env.VITE_CHAT_API_URL || "http://localhost:3005
 
 // ── Helpers ────────────────────────────────────────────────────
 const getChatSessionId = () => {
+<<<<<<< Updated upstream
+  const existingSessionId = window.localStorage.getItem(CHAT_SESSION_STORAGE_KEY);
+  if (existingSessionId) return existingSessionId;
+  const generatedSessionId =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `chat-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  window.localStorage.setItem(CHAT_SESSION_STORAGE_KEY, generatedSessionId);
+  return generatedSessionId;
+=======
   const existing = window.localStorage.getItem(CHAT_SESSION_STORAGE_KEY);
   if (existing) return existing;
   const generated =
@@ -50,6 +60,7 @@ const getChatSessionId = () => {
       : `chat-${Date.now()}-${Math.random().toString(16).slice(2)}`;
   window.localStorage.setItem(CHAT_SESSION_STORAGE_KEY, generated);
   return generated;
+>>>>>>> Stashed changes
 };
 
 const createMessage = (role: ChatRole, content: string): ChatMessage => ({
@@ -120,14 +131,24 @@ const deleteHistoryFromDB = async (userId: string) => {
 
 // ── Component ──────────────────────────────────────────────────
 export default function ChatBubble() {
+<<<<<<< Updated upstream
+  // ── Auth ───────────────────────────────────────────────────
+=======
   // Auth
+>>>>>>> Stashed changes
   const user = getUserFromToken();
   const userName = user
     ? `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || null
     : null;
   const userId = user?.id ?? null;
   const token = localStorage.getItem("token") ?? "";
+<<<<<<< Updated upstream
+  const HISTORY_KEY = userId ? `chat-history-${userId}` : null;
 
+  // ── Welcome message ────────────────────────────────────────
+=======
+
+>>>>>>> Stashed changes
   const getWelcomeMessage = () => {
     if (userName) {
       return `Xin chào ${userName}! 👋 Tôi là AI tư vấn laptop của LaptopStore.\nTôi có thể giúp gì cho bạn hôm nay?`;
@@ -135,23 +156,56 @@ export default function ChatBubble() {
     return "Xin chào! 👋 Tôi là AI tư vấn laptop. Bạn có thể hỏi:\n- 'Laptop gaming dưới 20 triệu?'\n- 'So sánh Titan Pro và Vortex RTX'\n- 'Xem giỏ hàng của tôi'\n\nHãy cho tôi biết nhu cầu của bạn!";
   };
 
+<<<<<<< Updated upstream
+  // ── State ──────────────────────────────────────────────────
+  const [sessionId] = useState(() => getChatSessionId());
+  const [isOpen, setIsOpen] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    if (userId) {
+      const saved = localStorage.getItem(`chat-history-${userId}`);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved) as ChatMessage[];
+          if (parsed.length > 0) return parsed;
+        } catch {}
+      }
+    }
+    return [createMessage("assistant", getWelcomeMessage())];
+  });
+=======
   // State
   const [sessionId] = useState(() => getChatSessionId());
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     createMessage("assistant", getWelcomeMessage()),
   ]);
+>>>>>>> Stashed changes
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
+<<<<<<< Updated upstream
+  // ── Auto scroll ────────────────────────────────────────────
+=======
   // Auto scroll
+>>>>>>> Stashed changes
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+<<<<<<< Updated upstream
+  // ── Lưu lịch sử ───────────────────────────────────────────
+  useEffect(() => {
+    if (!HISTORY_KEY) return;
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(messages));
+  }, [messages, HISTORY_KEY]);
+
+  // ── Xóa lịch sử ───────────────────────────────────────────
+  const clearHistory = () => {
+    if (HISTORY_KEY) localStorage.removeItem(HISTORY_KEY);
+=======
   // Load lịch sử từ MongoDB khi mở chat
   useEffect(() => {
     if (!userId || !isOpen) return;
@@ -168,11 +222,16 @@ export default function ChatBubble() {
       await deleteHistoryFromDB(userId);
       localStorage.removeItem(`chat-history-${userId}`);
     }
+>>>>>>> Stashed changes
     setMessages([createMessage("assistant", getWelcomeMessage())]);
     setRecommendedProducts([]);
   };
 
+<<<<<<< Updated upstream
+  // ── Gửi tin nhắn ──────────────────────────────────────────
+=======
   // Gửi tin nhắn
+>>>>>>> Stashed changes
   const sendMessage = async (text?: string) => {
     const messageText = (text || input).trim();
     if (!messageText || isLoading) return;
@@ -216,6 +275,32 @@ export default function ChatBubble() {
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
+<<<<<<< Updated upstream
+      const text = await response.text();
+      let data: ChatResponse;
+      try {
+        data = JSON.parse(text) as ChatResponse;
+      } catch {
+        data = { answer: text };
+      }
+      const assistantText = data.answer || data.text || data.message || JSON.stringify(data);
+
+      // Lấy products: ưu tiên productIds từ n8n, fallback parse response
+      let products: Product[] = [];
+      if (data.productIds && data.productIds.length > 0) {
+        try {
+          const productRes = await fetch(
+            `${API_BASE_URLS.product}/products?ids=${data.productIds.join(",")}`
+          );
+          const productData = await productRes.json();
+          products = productData.data || [];
+        } catch {
+          products = parseProductsFromResponse(data);
+        }
+      } else {
+        products = parseProductsFromResponse(data);
+      }
+=======
       // Parse response — hỗ trợ cả JSON và plain text
       const responseText = await response.text();
       let data: ChatResponse;
@@ -227,10 +312,13 @@ export default function ChatBubble() {
 
       const assistantText = data.answer || data.text || data.message || responseText;
       const products = parseProductsFromResponse(data);
+>>>>>>> Stashed changes
 
       setMessages((prev) => [...prev, createMessage("assistant", assistantText)]);
       setRecommendedProducts(products.slice(0, 3));
 
+<<<<<<< Updated upstream
+=======
       // Lưu vào MongoDB nếu đã đăng nhập
       if (userId) {
         saveMessagesToDB(userId, [
@@ -239,6 +327,7 @@ export default function ChatBubble() {
         ]);
       }
 
+>>>>>>> Stashed changes
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "Lỗi không xác định";
       setError(errorMsg);
@@ -251,7 +340,11 @@ export default function ChatBubble() {
     }
   };
 
+<<<<<<< Updated upstream
+  // ── Render ─────────────────────────────────────────────────
+=======
   // Render
+>>>>>>> Stashed changes
   return (
     <>
       {isOpen && (
