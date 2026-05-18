@@ -24,19 +24,46 @@ services:
     networks:
       - app-network
 
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: webgame-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MGMT_PORT:-15672}:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 8
+    networks:
+      - app-network
+
   identity:
     build:
       context: ./services/identity
       dockerfile: Dockerfile
     container_name: webgame-identity
     restart: unless-stopped
+    expose:
+      - "3001"
     ports:
       - "${USER_PORT:-3001}:3001"
     environment:
       SERVICE_NAME: identity-service
       PORT: 3001
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173,http://localhost:5174}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173,http://localhost:5174,http://localhost:8080}
       ACCESS_TOKEN: ${ACCESS_TOKEN}
+      GATEWAY_SECRET: ${GATEWAY_SECRET:-gateway-shared-secret}
+      INTERNAL_SECRET: ${INTERNAL_SECRET:-internal-shared-secret}
+      CHECKOUT_SERVICE_URL: http://checkout:3004
+      REQUEST_TIMEOUT_MS: 5000
+      CHECKOUT_RETRY_COUNT: 2
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
       MYSQL_USER: root
@@ -53,6 +80,8 @@ services:
       dockerfile: Dockerfile
     container_name: webgame-catalog
     restart: unless-stopped
+    expose:
+      - "3002"
     ports:
       - "${PRODUCT_PORT:-3002}:3002"
     volumes:
@@ -60,8 +89,13 @@ services:
     environment:
       SERVICE_NAME: catalog-service
       PRODUCT_PORT: 3002
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173,http://localhost:5174}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173,http://localhost:5174,http://localhost:8080}
       PRODUCTS_JSON_PATH: /app/products.json
+      ACCESS_TOKEN: ${ACCESS_TOKEN}
+      INTERNAL_SECRET: ${INTERNAL_SECRET:-internal-shared-secret}
+      IDENTITY_SERVICE_URL: http://identity:3001
+      REQUEST_TIMEOUT_MS: 5000
+      USER_RETRY_COUNT: 2
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
       MYSQL_USER: root
@@ -78,13 +112,19 @@ services:
       dockerfile: Dockerfile
     container_name: webgame-checkout
     restart: unless-stopped
+    expose:
+      - "3004"
     ports:
       - "${CHECKOUT_PORT:-3004}:3004"
     environment:
       SERVICE_NAME: checkout-service
       CHECKOUT_PORT: 3004
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173,http://localhost:5174}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173,http://localhost:5174,http://localhost:8080}
       ACCESS_TOKEN: ${ACCESS_TOKEN}
+      GATEWAY_SECRET: ${GATEWAY_SECRET:-gateway-shared-secret}
+      INTERNAL_SECRET: ${INTERNAL_SECRET:-internal-shared-secret}
+      IDENTITY_SERVICE_URL: http://identity:3001
+      USER_RETRY_COUNT: 2
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
       MYSQL_USER: ${CHECKOUT_MYSQL_USER:-checkout_svc}
@@ -93,6 +133,8 @@ services:
       PRODUCT_SERVICE_URL: http://catalog:3002
       REQUEST_TIMEOUT_MS: 5000
       PRODUCT_RETRY_COUNT: 2
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672
+      ORDER_EXCHANGE: order.events
       MOMO_ACCESS_KEY: ${MOMO_ACCESS_KEY}
       MOMO_SECRET_KEY: ${MOMO_SECRET_KEY}
       MOMO_PARTNER_CODE: ${MOMO_PARTNER_CODE:-MOMO}
@@ -105,27 +147,71 @@ services:
         condition: service_healthy
       catalog:
         condition: service_started
+      rabbitmq:
+        condition: service_healthy
     networks:
       - app-network
+
+  gateway:
+    build:
+      context: ./services/gateway
+      dockerfile: Dockerfile
+    container_name: webgame-gateway
+    restart: unless-stopped
+    ports:
+      - "${GATEWAY_PORT:-8080}:8080"
+    environment:
+      SERVICE_NAME: api-gateway
+      GATEWAY_PORT: 8080
+      ACCESS_TOKEN: ${ACCESS_TOKEN}
+      GATEWAY_SECRET: ${GATEWAY_SECRET:-gateway-shared-secret}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173,http://localhost:5174}
+      IDENTITY_SERVICE_URL: http://identity:3001
+      CATALOG_SERVICE_URL: http://catalog:3002
+      CHECKOUT_SERVICE_URL: http://checkout:3004
+    depends_on:
+      - identity
+      - catalog
+      - checkout
+    networks:
+      - app-network
+
+  notification-worker:
+    build:
+      context: ./services/notification-worker
+      dockerfile: Dockerfile
+    container_name: webgame-notification-worker
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: notification-worker
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672
+      ORDER_EXCHANGE: order.events
+      QUEUE_NAME: order.created.notifications
+      MAX_RETRY: 3
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+
   front-end:
     build:
       context: ./front-end
       dockerfile: Dockerfile.prod
       args:
-        VITE_USER_API_URL: ${VITE_USER_API_URL:-http://localhost:3001}
-        VITE_PRODUCT_API_URL: ${VITE_PRODUCT_API_URL:-http://localhost:3002}
-        VITE_CHECKOUT_API_URL: ${VITE_CHECKOUT_API_URL:-http://localhost:3004}
-        VITE_CART_API_URL: ${VITE_CART_API_URL:-http://localhost:3004}
-        VITE_PAYMENT_API_URL: ${VITE_PAYMENT_API_URL:-http://localhost:3004}
+        VITE_USER_API_URL: ${VITE_USER_API_URL:-http://localhost:8080/api/identity}
+        VITE_PRODUCT_API_URL: ${VITE_PRODUCT_API_URL:-http://localhost:8080/api/catalog}
+        VITE_CHECKOUT_API_URL: ${VITE_CHECKOUT_API_URL:-http://localhost:8080/api/checkout}
+        VITE_CART_API_URL: ${VITE_CART_API_URL:-http://localhost:8080/api/checkout}
+        VITE_PAYMENT_API_URL: ${VITE_PAYMENT_API_URL:-http://localhost:8080/api/checkout}
         VITE_SOCKET_URL: ${VITE_SOCKET_URL:-http://localhost:3004}
+        VITE_CHAT_API_URL: ${VITE_CHAT_API_URL:-http://localhost:3005}
     container_name: webgame-frontend
     restart: unless-stopped
     ports:
       - "${FRONTEND_PORT:-5173}:80"
     depends_on:
-      - identity
-      - catalog
-      - checkout
+      - gateway
     networks:
       - app-network
   admin-portal:
@@ -133,16 +219,15 @@ services:
       context: ./admin-portal
       dockerfile: Dockerfile.prod
       args:
-        VITE_USER_API_URL: ${VITE_USER_API_URL:-http://localhost:3001}
-        VITE_PRODUCT_API_URL: ${VITE_PRODUCT_API_URL:-http://localhost:3002}
-        VITE_CHECKOUT_API_URL: ${VITE_CHECKOUT_API_URL:-http://localhost:3004}
+        VITE_USER_API_URL: ${VITE_USER_API_URL:-http://localhost:8080/api/identity}
+        VITE_PRODUCT_API_URL: ${VITE_PRODUCT_API_URL:-http://localhost:8080/api/catalog}
+        VITE_CHECKOUT_API_URL: ${VITE_CHECKOUT_API_URL:-http://localhost:8080/api/checkout}
     container_name: webgame-admin-portal
     restart: unless-stopped
     ports:
       - "${ADMIN_PORT:-5174}:80"
     depends_on:
-      - identity
-      - catalog
+      - gateway
     networks:
       - app-network
   n8n:
@@ -158,9 +243,21 @@ services:
       - N8N_CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:5174
     networks:
       - app-network
+  mongodb:
+    image: mongo:7
+    container_name: webgame-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - app-network
 networks:
   app-network:
     driver: bridge
 volumes:
   mysql_data:
-  n8n_data:  
+  n8n_data:
+  rabbitmq_data:
+  mongodb_data:
