@@ -1,3 +1,4 @@
+require('./tracing');
 const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
@@ -10,7 +11,7 @@ const app = express();
 
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
-require('./config/db_conn');
+const pool = require('./config/db_conn');
 const port = process.env.USER_PORT || 3001;
 const serviceName = process.env.SERVICE_NAME || 'identity-service';
 const corsOrigin = process.env.CORS_ORIGIN || '*';
@@ -53,12 +54,18 @@ app.use((req, res, next) => {
 
 app.get('/health', (req, res) => {
     return sendSuccess(res, req, {
-        data: {
-            service: serviceName,
-            status: 'UP',
-        },
+        data: { service: serviceName, status: 'UP' },
         message: 'Health check passed',
     });
+});
+
+app.get('/health/ready', async (req, res) => {
+    try {
+        await pool.query('SELECT 1');
+        return sendSuccess(res, req, { data: { service: serviceName, status: 'READY' }, message: 'Readiness check passed' });
+    } catch (err) {
+        res.status(503).json({ success: false, data: { service: serviceName, status: 'NOT_READY' }, message: err.message });
+    }
 });
 
 app.post('/login', loginUser);
@@ -72,9 +79,21 @@ ensureSeedAdmin().catch((error) => {
 });
 
 if (require.main === module) {
-    app.listen(port, () => {
+    const server = app.listen(port, () => {
         console.log(`Server running on port ${port}`);
     });
+
+    const shutdown = (signal) => {
+        console.log(JSON.stringify({ ts: new Date().toISOString(), level: 'info', service: serviceName, message: 'shutdown_initiated', signal }));
+        server.close(async () => {
+            try { await pool.end(); } catch (_) {}
+            process.exit(0);
+        });
+        setTimeout(() => process.exit(1), 10000).unref();
+    };
+
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
 module.exports = app;

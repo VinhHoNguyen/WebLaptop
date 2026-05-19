@@ -1,6 +1,13 @@
 const fetch = require('node-fetch');
+const CircuitBreaker = require('../utils/circuitBreaker');
 
 const PRODUCT_SERVICE_URL = (process.env.PRODUCT_SERVICE_URL || 'http://localhost:3002').replace(/\/+$/, '');
+
+const breaker = new CircuitBreaker('catalog-service', {
+  failureThreshold: 5,
+  successThreshold: 2,
+  timeout: 30000,
+});
 const REQUEST_TIMEOUT_MS = Number(process.env.REQUEST_TIMEOUT_MS || 5000);
 const RETRY_COUNT = Number(process.env.PRODUCT_RETRY_COUNT || 2);
 const INTERNAL_SECRET = process.env.INTERNAL_SECRET || 'internal-shared-secret';
@@ -60,7 +67,7 @@ const getProductsByIds = async (ids = []) => {
     return [];
   }
   const query = encodeURIComponent(uniqueIds.join(','));
-  return requestWithRetry(`/products/internal/batch?ids=${query}`);
+  return breaker.call(() => requestWithRetry(`/products/internal/batch?ids=${query}`));
 };
 
 const getProductById = async (id) => {
@@ -68,7 +75,7 @@ const getProductById = async (id) => {
   if (!productId) {
     throw new Error('Missing product id');
   }
-  return requestWithRetry(`/products/internal/${encodeURIComponent(productId)}`);
+  return breaker.call(() => requestWithRetry(`/products/internal/${encodeURIComponent(productId)}`));
 };
 
 const adjustStock = async (id, delta) => {
@@ -77,10 +84,10 @@ const adjustStock = async (id, delta) => {
   if (!productId || !Number.isFinite(intDelta) || intDelta === 0) {
     throw new Error('Invalid productId or delta');
   }
-  return requestWithRetry(`/products/internal/${encodeURIComponent(productId)}/stock`, {
+  return breaker.call(() => requestWithRetry(`/products/internal/${encodeURIComponent(productId)}/stock`, {
     method: 'PATCH',
     body: { delta: intDelta },
-  });
+  }));
 };
 
 const decrementStock = async (id, count) => {

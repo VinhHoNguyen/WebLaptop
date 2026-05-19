@@ -64,11 +64,18 @@ services:
       CHECKOUT_SERVICE_URL: http://checkout:3004
       REQUEST_TIMEOUT_MS: 5000
       CHECKOUT_RETRY_COUNT: 2
+      OTEL_ENDPOINT: http://jaeger:4318
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
       MYSQL_USER: root
       MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
       MYSQL_DATABASE: identity_db
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3001/health/ready || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     depends_on:
       mysql:
         condition: service_healthy
@@ -96,11 +103,18 @@ services:
       IDENTITY_SERVICE_URL: http://identity:3001
       REQUEST_TIMEOUT_MS: 5000
       USER_RETRY_COUNT: 2
+      OTEL_ENDPOINT: http://jaeger:4318
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
       MYSQL_USER: root
       MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
       MYSQL_DATABASE: product_db
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3002/health/ready || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     depends_on:
       mysql:
         condition: service_healthy
@@ -133,6 +147,7 @@ services:
       PRODUCT_SERVICE_URL: http://catalog:3002
       REQUEST_TIMEOUT_MS: 5000
       PRODUCT_RETRY_COUNT: 2
+      OTEL_ENDPOINT: http://jaeger:4318
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672
       ORDER_EXCHANGE: order.events
       MOMO_ACCESS_KEY: ${MOMO_ACCESS_KEY}
@@ -142,11 +157,17 @@ services:
       MOMO_REDIRECT_URL: ${MOMO_REDIRECT_URL:-http://localhost:5173/momo}
       MOMO_IPN_URL: ${MOMO_IPN_URL:-https://webhook.site/replace-with-your-ipn}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3004/health/ready || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     depends_on:
       mysql:
         condition: service_healthy
       catalog:
-        condition: service_started
+        condition: service_healthy
       rabbitmq:
         condition: service_healthy
     networks:
@@ -166,13 +187,17 @@ services:
       ACCESS_TOKEN: ${ACCESS_TOKEN}
       GATEWAY_SECRET: ${GATEWAY_SECRET:-gateway-shared-secret}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173,http://localhost:5174}
+      OTEL_ENDPOINT: http://jaeger:4318
       IDENTITY_SERVICE_URL: http://identity:3001
       CATALOG_SERVICE_URL: http://catalog:3002
       CHECKOUT_SERVICE_URL: http://checkout:3004
     depends_on:
-      - identity
-      - catalog
-      - checkout
+      identity:
+        condition: service_healthy
+      catalog:
+        condition: service_healthy
+      checkout:
+        condition: service_healthy
     networks:
       - app-network
 
@@ -269,6 +294,58 @@ services:
       - mongodb
     networks:
       - app-network
+  jaeger:
+    image: jaegertracing/all-in-one:1.57
+    container_name: webgame-jaeger
+    restart: unless-stopped
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"
+      - "4318:4318"
+    networks:
+      - app-network
+
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: webgame-loki
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - app-network
+
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: webgame-promtail
+    restart: unless-stopped
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./observability/promtail-config.yml:/etc/promtail/config.yml:ro
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - app-network
+
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: webgame-grafana
+    restart: unless-stopped
+    ports:
+      - "3200:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./observability/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+    depends_on:
+      - loki
+      - jaeger
+    networks:
+      - app-network
+
 networks:
   app-network:
     driver: bridge
@@ -277,3 +354,4 @@ volumes:
   n8n_data:
   rabbitmq_data:
   mongodb_data:
+  grafana_data:

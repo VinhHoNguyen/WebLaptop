@@ -1,7 +1,8 @@
+require('./tracing');
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
-require('./config/db_conn');
+const pool = require('./config/db_conn');
 const express = require('express');
 const app = express();
 const http = require('http').Server(app);
@@ -69,12 +70,18 @@ app.use((req, res, next) => {
 
 app.get('/health', (req, res) => {
   return sendSuccess(res, req, {
-    data: {
-      service: serviceName,
-      status: 'UP',
-    },
+    data: { service: serviceName, status: 'UP' },
     message: 'Health check passed',
   });
+});
+
+app.get('/health/ready', async (req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    return sendSuccess(res, req, { data: { service: serviceName, status: 'READY' }, message: 'Readiness check passed' });
+  } catch (err) {
+    res.status(503).json({ success: false, data: { service: serviceName, status: 'NOT_READY' }, message: err.message });
+  }
 });
 
 app.use('/img', express.static('public/img'));
@@ -94,7 +101,6 @@ app.use('/api/DetailOrder', Detail_OrderAPI)
 app.use('/cart', CartAPI)
 
 // Auto-migrate: add image column to order_details if not present
-const pool = require('./config/db_conn');
 pool.query(`ALTER TABLE order_details ADD COLUMN image TEXT NULL`).catch(() => {});
 
 app.use('/', OrderAPI)
@@ -121,6 +127,19 @@ if (require.main === module) {
   http.listen(port, () => {
     console.log('listening on *: ' + port);
   });
+
+  const shutdown = (signal) => {
+    logger.write('info', 'shutdown_initiated', { service: serviceName, signal });
+    io.close();
+    http.close(async () => {
+      try { await pool.end(); } catch (_) {}
+      process.exit(0);
+    });
+    setTimeout(() => process.exit(1), 10000).unref();
+  };
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
 module.exports = app;

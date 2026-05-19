@@ -11,6 +11,9 @@
     "smoke": "node scripts/smoke.js"
   },
   "dependencies": {
+    "@opentelemetry/auto-instrumentations-node": "^0.49.4",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.52.1",
+    "@opentelemetry/sdk-node": "^0.52.1",
     "amqplib": "^0.10.4",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",

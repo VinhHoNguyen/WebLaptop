@@ -1,3 +1,4 @@
+require('./tracing');
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 require('dotenv').config({ path: path.resolve(__dirname, '..', '..', '.env') });
@@ -61,10 +62,19 @@ app.use((req, res) => {
 });
 
 if (require.main === module) {
-  app.listen(port, () => {
+  const server = app.listen(port, () => {
     logger.info('gateway_started', { port });
     console.log(`API Gateway listening on port ${port}`);
   });
+
+  const shutdown = (signal) => {
+    logger.info('shutdown_initiated', { service: 'api-gateway', signal });
+    server.close(() => process.exit(0));
+    setTimeout(() => process.exit(1), 10000).unref();
+  };
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
 module.exports = app;

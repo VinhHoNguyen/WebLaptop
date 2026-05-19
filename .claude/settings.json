@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(node_modules/.bin/tsc --noEmit)"
+      "Bash(node_modules/.bin/tsc --noEmit)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\thonguyen\\\\WebLaptop\" -Force)",
+      "Bash(Select-Object -Property Name, PSIsContainer)",
+      "Bash(Sort-Object -Property PSIsContainer -Descending)",
+      "Bash(Format-Table -AutoSize)"
     ]
   }
 }

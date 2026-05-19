@@ -1,6 +1,13 @@
 const fetch = require('node-fetch');
+const CircuitBreaker = require('../utils/circuitBreaker');
 
 const IDENTITY_SERVICE_URL = (process.env.IDENTITY_SERVICE_URL || 'http://localhost:3001').replace(/\/+$/, '');
+
+const breaker = new CircuitBreaker('identity-service', {
+  failureThreshold: 5,
+  successThreshold: 2,
+  timeout: 30000,
+});
 const REQUEST_TIMEOUT_MS = Number(process.env.REQUEST_TIMEOUT_MS || 5000);
 const RETRY_COUNT = Number(process.env.USER_RETRY_COUNT || 2);
 const INTERNAL_SECRET = process.env.INTERNAL_SECRET || 'internal-shared-secret';
@@ -59,7 +66,7 @@ const getUserById = async (userId) => {
   if (!id) {
     throw new Error('Missing user id');
   }
-  return requestWithRetry(`/users/internal/${encodeURIComponent(id)}`);
+  return breaker.call(() => requestWithRetry(`/users/internal/${encodeURIComponent(id)}`));
 };
 
 module.exports = {
