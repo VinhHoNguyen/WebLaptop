@@ -96,15 +96,6 @@ type UserFormState = {
   status: string;
 };
 
-type OrderStatus = "completed" | "pending" | "shipped" | "cancelled" | "processing";
-
-type OrderRow = {
-  id: string;
-  customer: string;
-  status: OrderStatus;
-  amount: number;
-};
-
 type AdminOrderRow = {
   id: string;
   id_user: string | null;
@@ -127,6 +118,7 @@ type AdminOrderDetailItem = {
   price_product: string | null;
   count: number;
   size: string | null;
+  image?: string | null;
 };
 
 const ADMIN_SESSION_KEY = "admin_session";
@@ -148,48 +140,12 @@ const USER_ROLE_LABELS: Record<string, string> = {
   User: "Người dùng",
 };
 
-const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
-  completed: "Hoàn tất",
-  pending: "Chờ xử lý",
-  shipped: "Đang giao",
-  cancelled: "Đã hủy",
-  processing: "Đang xử lý",
+type DashboardKPI = {
+  totalUsers: number;
+  totalOrders: number;
+  totalRevenue: number;
+  completedOrders: number;
 };
-
-const kpiCards = [
-  { title: "Tổng người dùng", value: "12.450", delta: "Tháng này +5,2%", tone: "blue" },
-  { title: "Đơn hàng mới", value: "1.234", delta: "Tuần này +3,8%", tone: "green" },
-  { title: "Doanh thu", value: "8.750.000 ₫", delta: "Tháng này +12,5%", tone: "orange" },
-  { title: "Hỗ trợ", value: "68", delta: "Đang chờ", tone: "red" },
-] as const;
-
-const orders: OrderRow[] = [
-  { id: "#10245", customer: "John Doe", status: "completed", amount: 150000 },
-  { id: "#10244", customer: "Anna Smith", status: "pending", amount: 89000 },
-  { id: "#10243", customer: "Michael Brown", status: "shipped", amount: 210000 },
-  { id: "#10242", customer: "Linda Nguyen", status: "cancelled", amount: 45000 },
-  { id: "#10241", customer: "David Wilson", status: "processing", amount: 120000 },
-];
-
-const topProducts = [
-  ["Điện thoại", "1.230 lượt bán"],
-  ["Laptop", "980 lượt bán"],
-  ["Tai nghe", "835 lượt bán"],
-  ["Đồng hồ thông minh", "652 lượt bán"],
-] as const;
-
-const activities = [
-  ["David thêm sản phẩm mới", "10 phút trước"],
-  ["Anna cập nhật đơn hàng", "30 phút trước"],
-  ["John phản hồi yêu cầu hỗ trợ", "1 giờ trước"],
-  ["Michael đăng ký người dùng mới", "2 giờ trước"],
-] as const;
-
-const messages = [
-  ["Alice", "Cần hỗ trợ về đơn hàng."],
-  ["Steve", "Làm sao để đổi mật khẩu?"],
-  ["Karen", "Vui lòng kiểm tra tồn kho."],
-] as const;
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("vi-VN", {
@@ -307,6 +263,12 @@ function App() {
   const [totalUsers, setTotalUsers] = useState(0);
   const [ordersData, setOrdersData] = useState<AdminOrderRow[]>([]);
   const [totalOrders, setTotalOrders] = useState(0);
+  const [dashboardKPI, setDashboardKPI] = useState<DashboardKPI>({
+    totalUsers: 0,
+    totalOrders: 0,
+    totalRevenue: 0,
+    completedOrders: 0,
+  });
   const [adminSession, setAdminSession] = useState<AdminSession | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
 
@@ -386,6 +348,8 @@ function App() {
 
     if (page === "orders") {
       fetchOrdersData();
+    } else if (page === "dashboard") {
+      fetchDashboardData();
     }
   }, [adminSession, page]);
 
@@ -466,22 +430,102 @@ function App() {
     }
   };
 
-  const fetchOrdersData = async () => {
+  const fetchDashboardData = async () => {
+    if (!adminSession) {
+      return;
+    }
+
     try {
-      const payload = await fetchJson<any>(`${API_BASE_URLS.checkout}/api/Payment/orders`);
-      const data = Array.isArray(payload)
-        ? payload
-        : Array.isArray(payload?.data)
-          ? payload.data
-          : [];
+      // Fetch orders for revenue and count
+      const ordersUrl = `${API_BASE_URLS.checkout}/api/Payment/orders`;
+      const ordersPayload = await fetchJson<any>(ordersUrl, {
+        headers: {
+          Authorization: `Bearer ${adminSession.token}`,
+        },
+      });
+
+      let ordersData: any[] = [];
+      if (Array.isArray(ordersPayload)) {
+        ordersData = ordersPayload;
+      } else if (ordersPayload?.data && Array.isArray(ordersPayload.data)) {
+        ordersData = ordersPayload.data;
+      } else if (typeof ordersPayload === 'object' && ordersPayload !== null) {
+        ordersData = Object.values(ordersPayload).find((v: any) => Array.isArray(v)) || [];
+      }
+      ordersData = ordersData.filter((item: any) => item != null);
+
+      // Fetch users for total count
+      const usersUrl = `${API_BASE_URLS.user}/users/all`;
+      const usersPayload = await fetchJson<any>(usersUrl, {
+        headers: {
+          Authorization: `Bearer ${adminSession.token}`,
+        },
+      });
+
+      let usersData: any[] = [];
+      if (Array.isArray(usersPayload)) {
+        usersData = usersPayload;
+      } else if (usersPayload?.data && Array.isArray(usersPayload.data)) {
+        usersData = usersPayload.data;
+      } else if (typeof usersPayload === 'object' && usersPayload !== null) {
+        usersData = Object.values(usersPayload).find((v: any) => Array.isArray(v)) || [];
+      }
+      usersData = usersData.filter((item: any) => item != null);
+
+      // Calculate KPIs
+      const totalRevenue = ordersData.reduce((sum: number, order: any) => sum + Number(order.total || 0), 0);
+      const completedOrders = ordersData.filter((order: any) => order.status === 1).length;
+
+      setDashboardKPI({
+        totalUsers: usersData.length,
+        totalOrders: ordersData.length,
+        totalRevenue: totalRevenue,
+        completedOrders: completedOrders,
+      });
+    } catch (error) {
+      console.error("Không thể tải dữ liệu dashboard:", error);
+    }
+  };
+
+  const fetchOrdersData = async () => {
+    if (!adminSession) {
+      setOrdersData([]);
+      setTotalOrders(0);
+      return;
+    }
+
+    try {
+      const url = `${API_BASE_URLS.checkout}/api/Payment/orders`;
+      console.log("Fetching orders from:", url);
+      
+      const payload = await fetchJson<any>(url, {
+        headers: {
+          Authorization: `Bearer ${adminSession.token}`,
+        },
+      });
+      console.log("Orders API response:", payload);
+
+      // Handle different response formats
+      let data: any[] = [];
+      if (Array.isArray(payload)) {
+        data = payload;
+      } else if (payload?.data && Array.isArray(payload.data)) {
+        data = payload.data;
+      } else if (typeof payload === 'object' && payload !== null) {
+        // Try to extract data from wrapped response
+        data = Object.values(payload).find((v: any) => Array.isArray(v)) || [];
+      }
+
+      // Filter out null/undefined entries
+      data = data.filter((item: any) => item != null);
 
       const normalized = data.map((item: any): AdminOrderRow => ({
-        id: item.id || "",
+        id: String(item.id || item._id || ""),
         id_user: item.id_user ?? null,
         id_payment: item.id_payment ?? null,
         address: item.address ?? null,
         total: Number(item.total || 0),
-        status: item.status || "Pending",
+        status: String(item.status || "Pending"),
         pay: Boolean(item.pay),
         feeship: Number(item.feeship || 0),
         id_coupon: item.id_coupon ?? null,
@@ -489,36 +533,76 @@ function App() {
         createdAt: item.createdAt ?? null,
       }));
 
+      console.log("Normalized orders:", normalized);
       setOrdersData(normalized);
       setTotalOrders(normalized.length);
     } catch (error) {
       console.error("Không thể tải danh sách đơn hàng:", error);
+      setOrdersData([]);
+      setTotalOrders(0);
     }
   };
 
   const fetchOrderDetails = async (orderId: string): Promise<AdminOrderDetailItem[]> => {
-    const payload = await fetchJson<any>(`${API_BASE_URLS.checkout}/api/DetailOrder/${orderId}`);
-    const data = Array.isArray(payload)
-      ? payload
-      : Array.isArray(payload?.data)
-        ? payload.data
-        : [];
+    if (!adminSession) {
+      return [];
+    }
 
-    return data.map((item: any): AdminOrderDetailItem => ({
-      id: item.id || "",
-      id_order: item.id_order || "",
-      id_product: item.id_product ?? null,
-      name_product: item.name_product ?? null,
-      price_product: item.price_product ?? null,
-      count: Number(item.count || 0),
-      size: item.size ?? null,
-    }));
+    try {
+      const url = `${API_BASE_URLS.checkout}/api/DetailOrder/${orderId}`;
+      console.log("Fetching order details from:", url);
+
+      const payload = await fetchJson<any>(url, {
+        headers: {
+          Authorization: `Bearer ${adminSession.token}`,
+        },
+      });
+      console.log("Order details API response:", payload);
+
+      // Handle different response formats
+      let data: any[] = [];
+      if (Array.isArray(payload)) {
+        data = payload;
+      } else if (payload?.data && Array.isArray(payload.data)) {
+        data = payload.data;
+      } else if (typeof payload === 'object' && payload !== null) {
+        // Try to extract data from wrapped response
+        data = Object.values(payload).find((v: any) => Array.isArray(v)) || [];
+      }
+
+      // Filter out null/undefined entries
+      data = data.filter((item: any) => item != null);
+
+      const normalized = data.map((item: any): AdminOrderDetailItem => ({
+        id: String(item.id || ""),
+        id_order: String(item.id_order || ""),
+        id_product: item.id_product ?? null,
+        name_product: item.name_product ?? null,
+        price_product: item.price_product ?? null,
+        count: Number(item.count || 0),
+        size: item.size ?? null,
+        image: item.image ?? null,
+      }));
+
+      console.log("Normalized order details:", normalized);
+      return normalized;
+    } catch (error) {
+      console.error(`Không thể tải chi tiết đơn hàng ${orderId}:`, error);
+      return [];
+    }
   };
 
   const updateOrderStatus = async (orderId: string, status: string) => {
+    if (!adminSession) {
+      throw new Error("Không có phiên đăng nhập");
+    }
+
     await fetchJson(`${API_BASE_URLS.checkout}/api/Payment/orders/${orderId}/status`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${adminSession.token}`,
+      },
       body: JSON.stringify({ status }),
     });
     await fetchOrdersData();
@@ -724,7 +808,7 @@ function App() {
         </header>
 
         {page === "dashboard" ? (
-          <DashboardView />
+          <DashboardView kpi={dashboardKPI} />
         ) : page === "users" ? (
           <UsersView
             rows={users}
@@ -837,7 +921,28 @@ function LoginView({
   );
 }
 
-function DashboardView() {
+function DashboardView({ kpi }: { kpi: DashboardKPI }) {
+  const kpiCards = [
+    {
+      title: "Tổng người dùng",
+      value: kpi.totalUsers.toLocaleString(),
+      delta: "Tất cả người dùng",
+      tone: "blue",
+    },
+    {
+      title: "Đơn hàng tổng",
+      value: kpi.totalOrders.toLocaleString(),
+      delta: `Hoàn tất: ${kpi.completedOrders}`,
+      tone: "green",
+    },
+    {
+      title: "Doanh thu",
+      value: formatCurrency(kpi.totalRevenue),
+      delta: "Tổng cộng",
+      tone: "orange",
+    },
+  ];
+
   return (
     <section className="dashboard">
       <div className="kpi-grid">
@@ -850,92 +955,29 @@ function DashboardView() {
         ))}
       </div>
 
-      <div className="grid-two">
-        <article className="panel large">
+      <div className="grid-single">
+        <article className="panel">
           <div className="panel-header">
-            <h3>Tổng quan doanh thu</h3>
-            <div className="tabs">
-              <button className="tab active">Theo tháng</button>
-              <button className="tab">Theo tuần</button>
-              <button className="tab">Theo ngày</button>
+            <h3>📊 Thống kê hệ thống</h3>
+          </div>
+          <div className="stats-grid">
+            <div className="stat-item">
+              <span className="stat-label">Tổng doanh thu</span>
+              <p className="stat-value">{formatCurrency(kpi.totalRevenue)}</p>
+            </div>
+            <div className="stat-item">
+              <span className="stat-label">Đơn hàng hoàn tất</span>
+              <p className="stat-value">{kpi.completedOrders}</p>
+            </div>
+            <div className="stat-item">
+              <span className="stat-label">Đơn hàng chưa xử lý</span>
+              <p className="stat-value">{kpi.totalOrders - kpi.completedOrders}</p>
+            </div>
+            <div className="stat-item">
+              <span className="stat-label">Người dùng hoạt động</span>
+              <p className="stat-value">{kpi.totalUsers}</p>
             </div>
           </div>
-          <svg viewBox="0 0 600 220" className="chart" role="img" aria-label="Biểu đồ doanh thu">
-            <polyline points="20,170 100,120 180,95 260,130 340,140 420,115 500,58 580,42" className="line blue" />
-            <polyline points="20,185 100,150 180,125 260,155 340,165 420,145 500,110 580,85" className="line green" />
-          </svg>
-        </article>
-
-        <article className="panel">
-          <div className="panel-header">
-            <h3>Đơn hàng gần đây</h3>
-          </div>
-          <table className="simple-table">
-            <thead>
-              <tr>
-                <th>Mã đơn</th>
-                <th>Khách hàng</th>
-                <th>Trạng thái</th>
-                <th>Tổng tiền</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((order) => (
-                <tr key={order.id}>
-                  <td>{order.id}</td>
-                  <td>{order.customer}</td>
-                  <td>
-                    <span className={`pill ${order.status.toLowerCase()}`}>{ORDER_STATUS_LABELS[order.status]}</span>
-                  </td>
-                  <td>{formatCurrency(order.amount)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </article>
-      </div>
-
-      <div className="grid-three">
-        <article className="panel">
-          <div className="panel-header">
-            <h3>Sản phẩm bán chạy</h3>
-          </div>
-          <ul className="list">
-            {topProducts.map((item) => (
-              <li key={item[0]}>
-                <span>{item[0]}</span>
-                <small>{item[1]}</small>
-              </li>
-            ))}
-          </ul>
-        </article>
-
-        <article className="panel">
-          <div className="panel-header">
-            <h3>Hoạt động gần đây</h3>
-          </div>
-          <ul className="list">
-            {activities.map((activity) => (
-              <li key={activity[0]}>
-                <span>{activity[0]}</span>
-                <small>{activity[1]}</small>
-              </li>
-            ))}
-          </ul>
-        </article>
-
-        <article className="panel">
-          <div className="panel-header">
-            <h3>Tin nhắn</h3>
-          </div>
-          <ul className="message-list">
-            {messages.map((message) => (
-              <li key={message[0]}>
-                <b>{message[0]}:</b> {message[1]}
-              </li>
-            ))}
-          </ul>
-          <button className="btn-view">Xem tất cả</button>
         </article>
       </div>
     </section>
@@ -1810,35 +1852,68 @@ function OrdersView({
                 <div style={{ padding: "6px 0", fontSize: 13, fontFamily: "monospace" }}>{detailOrder.id}</div>
               </div>
               <div className="form-field">
+                <span>Trạng thái</span>
+                <div style={{ padding: "6px 0", fontSize: 13, fontWeight: 500, color: "#0066cc" }}>
+                  {formatOrderStatus(detailOrder.status)}
+                </div>
+              </div>
+              <div className="form-field">
                 <span>Ngày đặt</span>
                 <div style={{ padding: "6px 0", fontSize: 13 }}>{formatDateTime(detailOrder.create_time)}</div>
+              </div>
+              <div className="form-field">
+                <span>Cập nhật lúc</span>
+                <div style={{ padding: "6px 0", fontSize: 13 }}>{formatDateTime(detailOrder.createdAt)}</div>
               </div>
               <div className="form-field form-field-wide">
                 <span>Địa chỉ giao hàng</span>
                 <div style={{ padding: "6px 0", fontSize: 13 }}>{detailOrder.address || "-"}</div>
               </div>
               <div className="form-field">
+                <span>Thanh toán</span>
+                <div style={{ padding: "6px 0", fontSize: 13 }}>
+                  <span style={{ 
+                    backgroundColor: detailOrder.pay ? "#d4edda" : "#f8d7da",
+                    color: detailOrder.pay ? "#155724" : "#721c24",
+                    padding: "2px 8px",
+                    borderRadius: "3px",
+                    fontSize: "12px",
+                    fontWeight: 500
+                  }}>
+                    {detailOrder.pay ? "✓ Đã thanh toán" : "✗ Chưa thanh toán"}
+                  </span>
+                </div>
+              </div>
+              {detailOrder.id_payment && (
+                <div className="form-field">
+                  <span>Mã giao dịch</span>
+                  <div style={{ padding: "6px 0", fontSize: 13, fontFamily: "monospace" }}>{detailOrder.id_payment}</div>
+                </div>
+              )}
+              <div className="form-field">
                 <span>Tổng tiền hàng</span>
-                <div style={{ padding: "6px 0", fontSize: 13 }}>{formatCurrency(detailOrder.total)}</div>
+                <div style={{ padding: "6px 0", fontSize: 13, fontWeight: 500 }}>{formatCurrency(detailOrder.total)}</div>
               </div>
               <div className="form-field">
                 <span>Phí vận chuyển</span>
                 <div style={{ padding: "6px 0", fontSize: 13 }}>{formatCurrency(detailOrder.feeship)}</div>
               </div>
               <div className="form-field">
-                <span>Thanh toán</span>
-                <div style={{ padding: "6px 0", fontSize: 13 }}>{detailOrder.pay ? "Đã thanh toán" : "Chưa thanh toán"}</div>
+                <span>Tổng cộng</span>
+                <div style={{ padding: "6px 0", fontSize: 14, fontWeight: 600, color: "#d9534f" }}>
+                  {formatCurrency(detailOrder.total + detailOrder.feeship)}
+                </div>
               </div>
               {detailOrder.id_coupon && (
                 <div className="form-field">
                   <span>Mã giảm giá</span>
-                  <div style={{ padding: "6px 0", fontSize: 13 }}>{detailOrder.id_coupon}</div>
+                  <div style={{ padding: "6px 0", fontSize: 13, color: "#28a745" }}>{detailOrder.id_coupon}</div>
                 </div>
               )}
             </div>
 
             <div style={{ marginBottom: 16 }}>
-              <div style={{ fontWeight: 600, marginBottom: 8 }}>Sản phẩm</div>
+              <div style={{ fontWeight: 600, marginBottom: 8 }}>Sản phẩm ({detailItems.length})</div>
               {isDetailLoading ? (
                 <div style={{ color: "#888", fontSize: 13 }}>Đang tải...</div>
               ) : detailError ? (
@@ -1846,26 +1921,54 @@ function OrdersView({
               ) : detailItems.length === 0 ? (
                 <div style={{ color: "#888", fontSize: 13 }}>Không có sản phẩm.</div>
               ) : (
-                <table className="simple-table">
-                  <thead>
-                    <tr>
-                      <th>Tên sản phẩm</th>
-                      <th>Size</th>
-                      <th>SL</th>
-                      <th>Đơn giá</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {detailItems.map((item) => (
-                      <tr key={item.id}>
-                        <td>{item.name_product || "-"}</td>
-                        <td>{item.size || "-"}</td>
-                        <td>{item.count}</td>
-                        <td>{item.price_product ? formatCurrency(Number(item.price_product)) : "-"}</td>
+                <div style={{ maxHeight: 300, overflowY: "auto" }}>
+                  <table className="simple-table">
+                    <thead>
+                      <tr>
+                        <th style={{ width: 60 }}>Hình ảnh</th>
+                        <th>Tên sản phẩm</th>
+                        <th>Size</th>
+                        <th style={{ width: 50 }}>SL</th>
+                        <th>Đơn giá</th>
+                        <th style={{ width: 80 }}>Thành tiền</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {detailItems.map((item) => {
+                        const unitPrice = Number(item.price_product || 0);
+                        const totalPrice = unitPrice * item.count;
+                        return (
+                          <tr key={item.id}>
+                            <td style={{ textAlign: "center" }}>
+                              {item.image ? (
+                                <img
+                                  src={item.image}
+                                  alt={item.name_product || "product"}
+                                  style={{
+                                    width: 50,
+                                    height: 50,
+                                    objectFit: "cover",
+                                    borderRadius: "4px",
+                                    border: "1px solid #ddd"
+                                  }}
+                                />
+                              ) : (
+                                <div style={{ width: 50, height: 50, backgroundColor: "#f0f0f0", borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#999" }}>
+                                  N/A
+                                </div>
+                              )}
+                            </td>
+                            <td>{item.name_product || "-"}</td>
+                            <td>{item.size || "-"}</td>
+                            <td style={{ textAlign: "center", fontWeight: 500 }}>{item.count}</td>
+                            <td>{item.price_product ? formatCurrency(unitPrice) : "-"}</td>
+                            <td style={{ fontWeight: 600 }}>{formatCurrency(totalPrice)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
 
@@ -1895,19 +1998,22 @@ function OrdersView({
         <table className="products-table">
           <thead>
             <tr>
-              <th>Mã đơn</th>
-              <th>Người dùng</th>
+              <th style={{ width: 100 }}>Mã đơn</th>
+              <th style={{ width: 90 }}>Người dùng</th>
               <th>Địa chỉ</th>
-              <th>Tổng tiền</th>
-              <th>Trạng thái</th>
-              <th>Thanh toán</th>
-              <th>Ngày đặt</th>
-              <th>Thao tác</th>
+              <th style={{ width: 100 }}>Tiền hàng</th>
+              <th style={{ width: 80 }}>Vận chuyển</th>
+              <th style={{ width: 100 }}>Tổng cộng</th>
+              <th style={{ width: 90 }}>Trạng thái</th>
+              <th style={{ width: 80 }}>Thanh toán</th>
+              <th style={{ width: 130 }}>Ngày đặt</th>
+              <th style={{ width: 60 }}>Thao tác</th>
             </tr>
           </thead>
           <tbody>
             {filteredRows.map((row) => {
               const statusClass = row.status.toLowerCase();
+              const totalPrice = row.total + row.feeship;
               return (
                 <tr key={row.id}>
                   <td style={{ fontFamily: "monospace", fontSize: 12 }}>#{row.id.slice(-8)}</td>
@@ -1915,19 +2021,21 @@ function OrdersView({
                   <td style={{ maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {row.address || "-"}
                   </td>
-                  <td>{formatCurrency(row.total)}</td>
+                  <td style={{ textAlign: "right" }}>{formatCurrency(row.total)}</td>
+                  <td style={{ textAlign: "right" }}>{formatCurrency(row.feeship)}</td>
+                  <td style={{ textAlign: "right", fontWeight: 600, color: "#d9534f" }}>{formatCurrency(totalPrice)}</td>
                   <td>
                     <span className={`pill ${statusClass}`}>{formatOrderStatus(row.status)}</span>
                   </td>
                   <td>
                     <span className={`pill ${row.pay ? "active" : "inactive"}`}>
-                      {row.pay ? "Đã thanh toán" : "Chưa TT"}
+                      {row.pay ? "✓ Đã TT" : "✗ Chưa TT"}
                     </span>
                   </td>
                   <td style={{ fontSize: 12 }}>{formatDateTime(row.create_time)}</td>
                   <td>
                     <button className="action-link" type="button" onClick={() => openDetail(row)}>
-                      Xem
+                      Chi tiết
                     </button>
                   </td>
                 </tr>
